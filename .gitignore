@@ -1,3 +1,11 @@
+# IDE and build system files
+.vscode/
+
+# Build output directory
+/build/
+/bin/
+/out/
+
 # Prerequisites
 *.d
 

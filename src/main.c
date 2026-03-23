@@ -139,7 +139,9 @@ int main(void) {
     printf("You chose %c. ", (human_symbol == CELL_X) ? 'X' : 'O');
     printf("Computer will play %c.\n\n", (human_symbol == CELL_X) ? 'O' : 'X');
 
-    // Play games in a loop
+    // Initialize first game board
+    game_new_game(&game);
+
     do {
         play_game(&game);
 
@@ -159,7 +161,6 @@ int main(void) {
                    (winner_choice == CELL_X) ? 'O' : 'X');
             game.game_count = 1;  // Restore count before game_new_game increments
         } else {
-            // Draw: keep same symbols
             printf("Draw! Keeping same symbols for next game.\n\n");
         }
 

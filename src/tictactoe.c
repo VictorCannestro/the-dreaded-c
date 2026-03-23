@@ -91,19 +91,21 @@ static int minimax(CellValue board[9], int depth, int is_maximizing) {
 }
 
 void game_init_session(GameState *state) {
-    if (state == NULL) return;
+    if (state == NULL) {
+        return;
+    }
 
     // Initialize with default values
     memset(state->board, CELL_EMPTY, 9 * sizeof(CellValue));
-    state->status = GAME_ONGOING;
+    state->status = ONGOING;
     state->move_count = 0;
     state->game_count = 0;
     state->last_winner = CELL_EMPTY;
 
     // Default: human plays X, computer plays O
-    state->players[0].type = PLAYER_HUMAN;    // X player
+    state->players[0].type = PLAYER_HUMAN;    
     state->players[0].symbol = CELL_X;
-    state->players[1].type = PLAYER_COMPUTER; // O player
+    state->players[1].type = PLAYER_COMPUTER; 
     state->players[1].symbol = CELL_O;
 
     // Seed random number generator for AI
@@ -111,23 +113,25 @@ void game_init_session(GameState *state) {
 }
 
 void game_new_game(GameState *state) {
-    if (state == NULL) return;
+    if (state == NULL) {
+        return;
+    }
 
     // Reset board and game state
     memset(state->board, CELL_EMPTY, 9 * sizeof(CellValue));
-    state->status = GAME_ONGOING;
+    state->status = ONGOING;
     state->move_count = 0;
-    // Note: Players are already configured. Don't reset them.
-    // Each new game keeps the same player assignments until explicitly changed.
     state->game_count++;
 }
 
 void game_reset(GameState *state) {
-    if (state == NULL) return;
+    if (state == NULL) {
+        return;
+    }
 
     // Reset board and game state (similar to game_new_game but without incrementing game_count)
     memset(state->board, CELL_EMPTY, 9 * sizeof(CellValue));
-    state->status = GAME_ONGOING;
+    state->status = ONGOING;
     state->move_count = 0;
 }
 
@@ -145,7 +149,7 @@ int game_make_move(GameState *state, int position) {
         return -1;  // Position already occupied
     }
 
-    if (state->status != GAME_ONGOING) {
+    if (state->status != ONGOING) {
         return -1;  // Game already finished
     }
 
@@ -157,18 +161,18 @@ int game_make_move(GameState *state, int position) {
     // Check for winner
     CellValue winner = check_winner(state->board);
     if (winner == CELL_X) {
-        state->status = GAME_X_WINS;
+        state->status = X_WINS;
         state->last_winner = CELL_X;
         return 0;
     } else if (winner == CELL_O) {
-        state->status = GAME_O_WINS;
+        state->status = O_WINS;
         state->last_winner = CELL_O;
         return 0;
     }
 
     // Check for draw (board full)
     if (state->move_count == 9) {
-        state->status = GAME_DRAW;
+        state->status = DRAW;
         return 0;
     }
 
@@ -176,7 +180,7 @@ int game_make_move(GameState *state, int position) {
 }
 
 GameStatus game_get_status(GameState *state) {
-    if (state == NULL) return GAME_ONGOING;
+    if (state == NULL) return ONGOING;
     return state->status;
 }
 
@@ -189,7 +193,7 @@ int game_is_valid_move(GameState *state, int position) {
         return 0;
     }
 
-    if (state->status != GAME_ONGOING) {
+    if (state->status != ONGOING) {
         return 0;
     }
 
@@ -276,5 +280,5 @@ int game_get_computer_move(GameState *state) {
 
 int game_is_over(GameState *state) {
     if (state == NULL) return 0;
-    return state->status != GAME_ONGOING;
+    return state->status != ONGOING;
 }

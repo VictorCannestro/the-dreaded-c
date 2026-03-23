@@ -15,10 +15,10 @@ typedef enum {
 } CellValue;
 
 typedef enum {
-    GAME_ONGOING = 0,
-    GAME_X_WINS = 1,
-    GAME_O_WINS = 2,
-    GAME_DRAW = 3
+    ONGOING = 0,
+    X_WINS = 1,
+    O_WINS = 2,
+    DRAW = 3
 } GameStatus;
 
 typedef enum {

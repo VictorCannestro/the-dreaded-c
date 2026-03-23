@@ -18,7 +18,7 @@ void test_game_init_session_creates_empty_board(void) {
     for (int i = 0; i < 9; i++) {
         TEST_ASSERT_EQUAL(CELL_EMPTY, game.board[i]);
     }
-    TEST_ASSERT_EQUAL(GAME_ONGOING, game.status);
+    TEST_ASSERT_EQUAL(ONGOING, game.status);
     TEST_ASSERT_EQUAL(0, game.move_count);
     TEST_ASSERT_EQUAL(0, game.game_count);
     TEST_ASSERT_EQUAL(CELL_EMPTY, game.last_winner);
@@ -38,7 +38,7 @@ void test_game_new_game_resets_board(void) {
     for (int i = 0; i < 9; i++) {
         TEST_ASSERT_EQUAL(CELL_EMPTY, game.board[i]);
     }
-    TEST_ASSERT_EQUAL(GAME_ONGOING, game.status);
+    TEST_ASSERT_EQUAL(ONGOING, game.status);
     TEST_ASSERT_EQUAL(0, game.move_count);
     TEST_ASSERT_EQUAL(1, game.game_count); // Game count should increment
 }
@@ -172,7 +172,7 @@ void test_x_wins_top_row(void) {
     game_make_move(&game, 4);  // O
     game_make_move(&game, 2);  // X wins
 
-    TEST_ASSERT_EQUAL(GAME_X_WINS, game.status);
+    TEST_ASSERT_EQUAL(X_WINS, game.status);
     TEST_ASSERT_EQUAL(CELL_X, game.last_winner);
 }
 
@@ -188,7 +188,7 @@ void test_o_wins_middle_column(void) {
     game_make_move(&game, 5);  // X
     game_make_move(&game, 7);  // O wins
 
-    TEST_ASSERT_EQUAL(GAME_O_WINS, game.status);
+    TEST_ASSERT_EQUAL(O_WINS, game.status);
     TEST_ASSERT_EQUAL(CELL_O, game.last_winner);
 }
 
@@ -203,7 +203,7 @@ void test_x_wins_diagonal(void) {
     game_make_move(&game, 2);  // O
     game_make_move(&game, 8);  // X wins diagonal
 
-    TEST_ASSERT_EQUAL(GAME_X_WINS, game.status);
+    TEST_ASSERT_EQUAL(X_WINS, game.status);
     TEST_ASSERT_EQUAL(CELL_X, game.last_winner);
 }
 
@@ -219,7 +219,7 @@ void test_o_wins_anti_diagonal(void) {
     game_make_move(&game, 3);  // X
     game_make_move(&game, 6);  // O wins anti-diagonal
 
-    TEST_ASSERT_EQUAL(GAME_O_WINS, game.status);
+    TEST_ASSERT_EQUAL(O_WINS, game.status);
     TEST_ASSERT_EQUAL(CELL_O, game.last_winner);
 }
 
@@ -240,7 +240,7 @@ void test_game_draw(void) {
     game_make_move(&game, 8);  // O
     game_make_move(&game, 7);  // X
 
-    TEST_ASSERT_EQUAL(GAME_DRAW, game.status);
+    TEST_ASSERT_EQUAL(DRAW, game.status);
     TEST_ASSERT_EQUAL(9, game.move_count);
 }
 
@@ -254,7 +254,7 @@ void test_game_reset(void) {
     game_make_move(&game, 1);
     game_reset(&game);
 
-    TEST_ASSERT_EQUAL(GAME_ONGOING, game.status);
+    TEST_ASSERT_EQUAL(ONGOING, game.status);
     TEST_ASSERT_EQUAL(0, game.move_count);
     TEST_ASSERT_EQUAL(CELL_EMPTY, game.board[0]);
     TEST_ASSERT_EQUAL(CELL_EMPTY, game.board[1]);

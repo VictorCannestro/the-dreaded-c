@@ -1,47 +1,25 @@
 @echo off
-REM Build script for Tic-Tac-Toe project
-REM This script sets up and builds the project
-
-setlocal enabledelayedexpansion
+REM Build script for Tic-Tac-Toe project using Ceedling
+REM This script sets up and builds the project on Windows
 
 echo ===================================
-echo Tic-Tac-Toe Project Builder
+echo Tic-Tac-Toe Project Builder (Ceedling)
 echo ===================================
 echo.
 
-REM Check if build directory exists
-if not exist "build" (
-    echo Creating build directory...
-    mkdir build
-    echo Build directory created.
-    echo.
+REM Check if Ceedling is installed
+ceedling --version >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: Ceedling is not installed.
+    echo Install Ruby first, then run: gem install ceedling
+    echo Or use the Docker container where it's pre-installed.
+    exit /b 1
 )
 
-REM Change to build directory
-cd build
-
-REM Check if CMakeCache.txt exists (project already configured)
-if not exist "CMakeCache.txt" (
-    echo Configuring project with CMake...
-    cmake .. -G "Visual Studio 16 2019"
-    if errorlevel 1 (
-        echo ERROR: CMake configuration failed.
-        echo Make sure you have:
-        echo   - CMake installed (https://cmake.org/download/)
-        echo   - Visual Studio Build Tools or Community Edition
-        echo   - Git (for downloading Unity test framework)
-        cd ..
-        exit /b 1
-    )
-    echo Project configured successfully.
-    echo.
-)
-
-echo Building project...
-cmake --build . --config Release
+echo Building project with Ceedling...
+ceedling build
 if errorlevel 1 (
     echo ERROR: Build failed.
-    cd ..
     exit /b 1
 )
 
@@ -51,13 +29,10 @@ echo Build completed successfully!
 echo ===================================
 echo.
 echo You can now:
-echo 1. Run the game: .\Release\tictactoe.exe
-echo 2. Run tests:    .\run_tests.exe
-echo 3. Run with ctest: ctest
+echo 1. Run tests:        ceedling test:all
+echo 2. Run specific test: ceedling test:test_tictactoe
+echo 3. Clean build:      ceedling clean
+echo 4. Release build:    ceedling release
 echo.
-echo Or from the parent directory:
-echo   - play the game: cd build ^& .\Release\tictactoe.exe
-echo   - run tests:     cd build ^& .\run_tests.exe
-echo.
-
-cd ..
+echo The game executable will be in build\release\tictactoe.exe
+echo Test results will be in build\test\results\

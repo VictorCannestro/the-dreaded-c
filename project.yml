@@ -1,0 +1,64 @@
+---
+:project:
+  :build_root: build
+  :release_build: TRUE
+  :test_file_prefix: test_
+  :default_tasks:
+    - test:all
+    - release
+
+:paths:
+  :test:
+    - tests/**
+  :source:
+    - src/**
+  :include:
+    - include/**
+
+:defines:
+  :test:
+    - TEST
+  :release: []
+
+:release_build:
+  :output: tictactoe.exe
+
+:tools:
+  :test_compiler:
+    :executable: gcc
+    :arguments:
+      - -std=c99
+      - -Iinclude
+      - -Ibuild/test/vendor/src
+      - -DTEST
+      - -c ${1}
+      - -o ${2}
+  :release_compiler:
+    :executable: gcc
+    :arguments:
+      - -std=c99
+      - -Iinclude
+      - -c ${1}
+      - -o ${2}
+  :test_linker:
+    :executable: gcc
+    :arguments:
+      - -std=c99
+      - -Werror
+      - -Wextra
+      - -pedantic
+      - -O2
+      - ${1}
+      - -o ${2}
+  :release_linker:
+    :executable: gcc
+    :arguments:
+      - -std=c99
+      - ${1}
+      - -o ${2}
+
+:plugins:
+  :enabled:
+    - report_tests_pretty_stdout
+    - module_generator
+    - report_tests_log_factory

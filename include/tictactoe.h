@@ -5,7 +5,7 @@
 
 /*
  * Tic-Tac-Toe Game Engine
- * A simple library to manage tic-tac-toe game logic
+ * A simple library to manage tic-tac-toe game logic with human vs computer support
  */
 
 typedef enum {
@@ -21,14 +21,39 @@ typedef enum {
     GAME_DRAW = 3
 } GameStatus;
 
+typedef enum {
+    PLAYER_HUMAN = 0,
+    PLAYER_COMPUTER = 1
+} PlayerType;
+
+typedef struct {
+    PlayerType type;  // Human or computer
+    CellValue symbol; // X or O
+} Player;
+
 typedef struct {
     CellValue board[9];  // 3x3 board, row-major order
     GameStatus status;
     int move_count;
+    Player players[2];   // players[0] is X, players[1] is O
+    int game_count;      // Track number of games played
+    CellValue last_winner; // Winner of the last game (for marker choice)
 } GameState;
 
 /*
- * Initialize a new game
+ * Initialize a new game session (first game)
+ * Sets up players and initial game state
+ */
+void game_init_session(GameState *state);
+
+/*
+ * Start a new game within the session
+ * Resets board but keeps player assignments
+ */
+void game_new_game(GameState *state);
+
+/*
+ * Initialize a new game (legacy function for backward compatibility)
  */
 void game_init(GameState *state);
 
@@ -50,13 +75,39 @@ GameStatus game_get_status(GameState *state);
 int game_is_valid_move(GameState *state, int position);
 
 /*
- * Get whose turn it is (based on move count)
+ * Get the current player (whose turn it is)
  * Returns CELL_X or CELL_O
  */
 CellValue game_get_current_player(GameState *state);
 
 /*
- * Reset the board for a new game
+ * Get the player type for a given symbol
+ */
+PlayerType game_get_player_type(GameState *state, CellValue symbol);
+
+/*
+ * Set player types (human vs computer)
+ */
+void game_set_player_types(GameState *state, PlayerType x_player, PlayerType o_player);
+
+/*
+ * Set player symbol choice for the first game
+ */
+void game_set_human_symbol_choice(GameState *state, CellValue human_symbol);
+
+/*
+ * Get computer move (AI logic)
+ * Returns position 0-8
+ */
+int game_get_computer_move(GameState *state);
+
+/*
+ * Check if game is over
+ */
+int game_is_over(GameState *state);
+
+/*
+ * Reset the game to initial state (legacy function)
  */
 void game_reset(GameState *state);
 

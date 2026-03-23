@@ -8,6 +8,8 @@
  */
 void display_board(const GameState *state);
 
+int newline();
+
 /*
  * Display the game status (win, draw, ongoing)
  */

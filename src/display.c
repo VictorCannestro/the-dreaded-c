@@ -1,12 +1,16 @@
 #include "display.h"
 #include <stdio.h>
 
-void display_board(const GameState *state) {
-    if (state == NULL) return;
+int newline() {
+    return printf("\n");
+}
 
-    printf("\n");
-    printf("   0 | 1 | 2\n");
-    printf("  -----------\n");
+void display_board(const GameState *state) {
+    if (state == NULL) {
+        return;
+    }
+
+    newline();
 
     for (int row = 0; row < 3; row++) {
         for (int col = 0; col < 3; col++) {
@@ -14,23 +18,26 @@ void display_board(const GameState *state) {
             CellValue cell = state->board[pos];
 
             if (cell == CELL_EMPTY) {
-                printf("   %d", pos);
-            } else if (cell == CELL_X) {
-                printf("   X");
+                printf(" _ ");
+            } 
+            if (cell == CELL_X) {
+                printf(" X ");
             } else {
-                printf("   O");
+                printf(" O ");
             }
 
-            if (col < 2) printf(" |");
+            if (col < 2) {
+                printf(" |");
+            }
         }
         printf("\n");
-        if (row < 2) printf("  -----------\n");
+        if (row < 2) printf("-----------------\n");
     }
-    printf("\n");
+    newline();
 }
 
 void display_status(GameStatus status) {
-    printf("\n");
+    newline();
     switch (status) {
         case GAME_X_WINS:
             printf("*** Player X WINS! ***\n");
@@ -45,5 +52,5 @@ void display_status(GameStatus status) {
             printf("Game is ongoing...\n");
             break;
     }
-    printf("\n");
+    newline();
 }

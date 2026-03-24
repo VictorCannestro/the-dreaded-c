@@ -7,7 +7,16 @@ void display_board(const GameState *state) {
     if (state == NULL) {
         return;
     }
-    char board_template[] = "   |   |   \n %c | %c | %c \n___|___|___\n   |   |   \n %c | %c | %c \n___|___|___\n   |   |   \n %c | %c | %c \n   |   |   ";
+    const char *board_template =
+        "   |   |   \n"
+       " %c | %c | %c \n"
+        "___|___|___\n"
+        "   |   |   \n"
+       " %c | %c | %c \n"
+        "___|___|___\n"
+        "   |   |   \n"
+       " %c | %c | %c \n"
+        "   |   |   ";
     newline();
     printf(
         board_template, 

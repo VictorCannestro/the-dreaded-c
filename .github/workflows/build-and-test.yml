@@ -1,0 +1,67 @@
+# Build and test Tic-Tac-Toe C project using Ceedling on multiple platforms
+name: Build and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.2'
+
+    - name: Install GCC (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential
+
+    - name: Install Ceedling
+      run: gem install ceedling -v 1.0.1
+
+    - name: Verify Tools
+      run: |
+        echo "GCC version:"
+        gcc --version
+        echo "Ceedling version:"
+        ceedling version
+
+    - name: Run Tests
+      run: ceedling test:all
+
+    - name: Build Release
+      run: ceedling release
+
+    - name: Verify Build Output
+      run: ls -la build/release/
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ matrix.os }}
+        path: |
+          build/artifacts/test/
+          build/test/results/
+
+    - name: Upload Release Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: tictactoe-${{ matrix.os }}
+        path: build/release/tictactoe.exe
+        if-no-files-found: warn
+

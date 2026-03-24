@@ -1,8 +1,10 @@
 # C Learning Guide - Tic-Tac-Toe Project
 
-This guide explains the key C concepts used in this project, with explanations for people new to C.
+This guide explains the key C concepts and software engineering practices used in this project, with explanations for people new to C.
 
 ## Table of Contents
+
+### Core C Concepts
 1. [Basic Types](#basic-types)
 2. [Enums](#enums)
 3. [Structs](#structs)
@@ -12,32 +14,89 @@ This guide explains the key C concepts used in this project, with explanations f
 7. [Header Files](#header-files)
 8. [Memory Management](#memory-management)
 
+### Software Engineering Practices
+9. [Separation of Concerns](#separation-of-concerns)
+10. [API Design](#api-design)
+11. [Defensive Programming](#defensive-programming)
+12. [Testing](#testing)
+13. [Code Smells and Refactoring](#code-smells-and-refactoring)
+
+### Common Pitfalls
+14. [C Pitfalls and How to Avoid Them](#c-pitfalls-and-how-to-avoid-them)
+
 ---
 
 ## Basic Types
 
-C has several built-in types for storing data:
+C provides fundamental data types for storing different kinds of values:
+
+| Type     | Size (typical) | Range       | Use Case                          |
+|----------|----------------|-------------|-----------------------------------|
+| `char`   | 1 byte         | -128 to 127 | Characters, small numbers         |
+| `int`    | 4 bytes        | ±2 billion  | General integers                  |
+| `float`  | 4 bytes        | ±3.4×10³⁸   | Decimals (6-7 digits precision)   |
+| `double` | 8 bytes        | ±1.7×10³⁰⁸  | Decimals (15-16 digits precision) |
 
 ```c
-int count = 5;           // Whole numbers (32-bit typically)
-float price = 9.99;      // Decimal numbers (less precise)
-double value = 3.14159;  // Decimal numbers (more precise)
-char letter = 'A';       // Single character
-void func(void);         // No return value or parameters
+int move_count = 0;      // Counting moves in the game
+char marker = 'X';       // Single character for display
+double score = 95.5;     // If we added scoring
 ```
 
-In our project:
+### Special Types
+
 ```c
-// In tictactoe.h
-typedef int GameStatus;  // We define our own type aliases
+void game_init(void);    // void = "nothing" (no return / no parameters)
 ```
+
+### Type Sizes Can Vary!
+
+C doesn't guarantee exact sizes. Use `<stdint.h>` when you need specific sizes:
+
+```c
+#include <stdint.h>
+
+int8_t   small = 127;      // Exactly 8 bits, signed
+uint32_t large = 4000000;  // Exactly 32 bits, unsigned
+```
+
+**In this project:** We use `int` for simplicity since exact sizes don't matter for a game.
 
 ---
 
 ## Enums
 
-An `enum` (enumeration) is a way to give meaningful names to integer values:
+An `enum` (enumeration) creates a set of named integer constants. Instead of remembering that `1` means X and `2` means O, you use meaningful names.
 
+### Syntax
+
+```c
+typedef enum {
+    CELL_EMPTY = 0,   // Explicit values (optional but recommended)
+    CELL_X = 1,
+    CELL_O = 2
+} CellValue;          // Type name
+
+CellValue cell = CELL_X;  // Usage
+```
+
+### Why Enums Are Essential
+
+**❌ Without enums (confusing):**
+```c
+if (board[0] == 1) { ... }   // What is 1? Who knows!
+board[4] = 2;                 // Setting to... something?
+```
+
+**✅ With enums (self-documenting):**
+```c
+if (board[0] == CELL_X) { ... }   // Checking for X
+board[4] = CELL_O;                 // Placing O at center
+```
+
+### All Enums in This Project
+
+**Cell values** (what's in each board position):
 ```c
 typedef enum {
     CELL_EMPTY = 0,
@@ -46,347 +105,1859 @@ typedef enum {
 } CellValue;
 ```
 
-**Why use enums?**
-- Instead of: `if (board[0] == 1)` // What does 1 mean?
-- We write: `if (board[0] == CELL_X)` // Clear!
-
-**In our project** (see [include/tictactoe.h](include/tictactoe.h)):
+**Game status** (is the game over?):
 ```c
 typedef enum {
-    GAME_ONGOING = 0,
-    GAME_X_WINS = 1,
-    GAME_O_WINS = 2,
-    GAME_DRAW = 3
+    ONGOING = 0,
+    X_WINS = 1,
+    O_WINS = 2,
+    DRAW = 3
 } GameStatus;
 ```
+
+**Player type** (human or computer?):
+```c
+typedef enum {
+    PLAYER_HUMAN = 0,
+    PLAYER_COMPUTER = 1
+} PlayerType;
+```
+
+**Difficulty level**:
+```c
+typedef enum {
+    DIFFICULTY_EASY = 0,
+    DIFFICULTY_HARD = 1
+} Difficulty;
+```
+
+### Clever Enum Trick: Using Values as Indices
+
+```c
+// CELL_X = 1, CELL_O = 2
+// players[0] = X's info, players[1] = O's info
+
+PlayerType game_get_player_type(GameState *state, CellValue symbol) {
+    return state->players[symbol - 1].type;  // CELL_X-1=0, CELL_O-1=1
+}
+```
+
+See [include/constants.h](include/constants.h) for all enum definitions.
 
 ---
 
 ## Structs
 
-A `struct` (structure) groups related data together:
+A `struct` (structure) groups related data together into a single unit. Think of it as a custom type that bundles multiple variables.
+
+### Syntax
 
 ```c
 typedef struct {
-    int age;
-    float height;
-    char name[50];
-} Person;
+    int x;
+    int y;
+} Point;
 
-// Usage:
-Person john;
-john.age = 30;
-john.height = 5.9;
+Point p;       // Declare a Point variable
+p.x = 10;      // Access members with dot notation
+p.y = 20;
 ```
 
-**In our project** (see [include/tictactoe.h](include/tictactoe.h)):
+### Structs in This Project
+
+**Player** - Who is playing (human or computer)?
 ```c
 typedef struct {
-    CellValue board[9];  // The 3x3 game board
-    GameStatus status;   // Current game state
-    int move_count;      // How many moves have been made
+    PlayerType type;    // PLAYER_HUMAN or PLAYER_COMPUTER
+    CellValue symbol;   // CELL_X or CELL_O
+} Player;
+```
+
+**GameState** - Everything about the current game:
+```c
+typedef struct {
+    CellValue board[9];    // The 3x3 board (9 cells)
+    GameStatus status;     // ONGOING, X_WINS, O_WINS, or DRAW
+    int move_count;        // How many moves made (0-9)
+    Player players[2];     // players[0]=X, players[1]=O
+    int game_count;        // Which game number in session
+    CellValue last_winner; // Who won the previous game
+    Difficulty difficulty; // DIFFICULTY_EASY or DIFFICULTY_HARD
 } GameState;
 ```
 
-**Why is this useful?**
-- Keeps related data together
-- Easier to pass to functions
-- More organized than separate variables
+### Accessing Struct Members
+
+**Direct access** (when you have the struct itself):
+```c
+GameState game;
+game.move_count = 0;
+game.board[4] = CELL_X;
+```
+
+**Pointer access** (when you have a pointer to the struct):
+```c
+GameState *state = &game;
+state->move_count = 0;      // Arrow notation for pointers
+state->board[4] = CELL_X;
+
+// Equivalent but more verbose:
+(*state).move_count = 0;
+```
+
+### Nested Structs
+
+Structs can contain other structs:
+```c
+// GameState contains an array of Player structs
+state->players[0].type = PLAYER_HUMAN;
+state->players[0].symbol = CELL_X;
+state->players[1].type = PLAYER_COMPUTER;
+state->players[1].symbol = CELL_O;
+```
+
+### Why Use Structs?
+
+1. **Organization** - Related data stays together
+2. **Pass to functions easily** - One parameter instead of many
+3. **Return multiple values** - Return a struct with all results
+4. **Self-documenting** - Field names explain what data means
+
+See [include/tictactoe.h](include/tictactoe.h) for struct definitions.
 
 ---
 
 ## Arrays
 
-Arrays store multiple values of the same type in order:
+Arrays store multiple values of the same type in contiguous memory.
+
+### Declaring and Using Arrays
 
 ```c
-int numbers[5];           // Array of 5 integers
-numbers[0] = 10;          // First element (0-indexed!)
-numbers[4] = 50;          // Last element
+int numbers[5];          // Array of 5 integers (indices 0-4)
+numbers[0] = 10;         // First element
+numbers[4] = 50;         // Last element (NOT numbers[5]!)
 
-// Multi-dimensional arrays
-int matrix[3][3];         // 3x3 grid
-matrix[0][0] = 1;         // Row 0, Column 0
-matrix[2][1] = 5;         // Row 2, Column 1
+// Initialize at declaration
+int primes[] = {2, 3, 5, 7, 11};  // Size inferred: 5 elements
 ```
 
-**Important:** Array indexing starts at 0!
-- `array[0]` is the FIRST element
-- `array[8]` is the 9th element
+### ⚠️ Critical: Arrays Are 0-Indexed!
 
-**In our project** (see [src/tictactoe.c](src/tictactoe.c)):
+```
+Index:    [0]  [1]  [2]  [3]  [4]
+Values:    10   20   30   40   50
+```
+
+- First element: `array[0]`
+- Last element of size-N array: `array[N-1]`
+- `array[N]` is **OUT OF BOUNDS** (undefined behavior!)
+
+### The Board: 1D Array as 2D Grid
+
+Our tic-tac-toe board uses a **linear array** to represent a 3×3 grid:
+
 ```c
-CellValue board[9];  // Linear array for 3x3 board
-// Position mapping:
-//   0 | 1 | 2
-//  -----------
-//   3 | 4 | 5
-//  -----------
-//   6 | 7 | 8
+CellValue board[9];  // 9 cells
 
-// To convert row,col to position:
-int position = row * 3 + col;  // Example: row=1, col=1 → position=4 (center)
+// Visual mapping:
+//   board[0] | board[1] | board[2]
+//   ---------+----------+---------
+//   board[3] | board[4] | board[5]
+//   ---------+----------+---------
+//   board[6] | board[7] | board[8]
 ```
+
+**Converting row/column to index:**
+```c
+int position = row * 3 + col;
+
+// Examples:
+// (0,0) → 0*3+0 = 0  (top-left)
+// (1,1) → 1*3+1 = 4  (center)
+// (2,2) → 2*3+2 = 8  (bottom-right)
+```
+
+### Arrays and Pointers
+
+When passed to functions, arrays "decay" to pointers:
+
+```c
+void clear_board(CellValue board[9]) {
+    // board is actually a pointer here!
+    for (int i = 0; i < 9; i++) {
+        board[i] = CELL_EMPTY;
+    }
+}
+
+// These declarations are equivalent for parameters:
+void func1(int arr[9]);   // Looks like array
+void func2(int arr[]);    // Size optional
+void func3(int *arr);     // Actually a pointer
+```
+
+### Common Array Operations
+
+```c
+// Iterate over all elements
+for (int i = 0; i < BOARD_SIZE; i++) {
+    if (board[i] == CELL_EMPTY) {
+        // Found empty cell
+    }
+}
+
+// Fill with a value (for single-byte values like 0)
+#include <string.h>
+memset(board, 0, sizeof(board));
+
+// Copy an array
+memcpy(destination, source, sizeof(source));
+```
+
+See [src/board.c](src/board.c) for array operations.
 
 ---
 
 ## Pointers
 
-A pointer is a variable that stores the memory address of another variable:
+A **pointer** stores the memory address of another variable. This is one of C's most powerful and most confusing features.
+
+### Visual Model
+
+```
+Variable x:     ┌───────┐
+                │  42   │  ← value
+                └───────┘
+                0x7ffc   ← address (memory location)
+
+Pointer ptr:    ┌───────┐
+                │0x7ffc │  ← stores the ADDRESS of x
+                └───────┘
+```
+
+### Pointer Operators
+
+| Operator | Name | Meaning |
+|----------|------|---------|
+| `&` | Address-of | Get the address of a variable |
+| `*` | Dereference | Get the value at an address |
+| `->` | Arrow | Access struct member through pointer |
+
+### Basic Example
 
 ```c
 int x = 42;
-int *ptr = &x;     // ptr points to x (&x means "address of x")
+int *ptr = &x;      // ptr holds the address of x
 
-printf("%d\n", *ptr);   // Prints: 42 (*ptr means "value at that address")
-printf("%p\n", ptr);    // Prints memory address (like: 0x7ffc...)
+printf("%d\n", x);      // 42 (the value)
+printf("%p\n", &x);     // 0x7ffc... (address of x)
+printf("%p\n", ptr);    // 0x7ffc... (same address)
+printf("%d\n", *ptr);   // 42 (value at that address)
+
+*ptr = 100;             // Modify x through the pointer
+printf("%d\n", x);      // 100 (x changed!)
 ```
 
-### Why use pointers?
+### Why Pointers Matter
 
-1. **Pass by reference** - Functions can modify the original variable:
+**1. Functions Can Modify Variables (Pass by Reference)**
+
 ```c
+// Without pointer - value is copied, original unchanged
+void broken_increment(int num) {
+    num = num + 1;  // Only modifies the copy
+}
+
+// With pointer - function modifies the original
 void increment(int *num) {
-    *num = *num + 1;    // Modify the original
+    *num = *num + 1;  // Modifies the actual variable
 }
 
 int value = 5;
-increment(&value);      // value is now 6
+broken_increment(value);   // value still 5
+increment(&value);         // value now 6
 ```
 
-2. **Return multiple values**:
+**2. Avoid Copying Large Data**
+
 ```c
-void divide_with_remainder(int a, int b, int *quotient, int *remainder) {
-    *quotient = a / b;
-    *remainder = a % b;
+// BAD: Copies entire GameState (expensive if large)
+void display_board_bad(GameState state) { ... }
+
+// GOOD: Only passes 8-byte address
+void display_board(GameState *state) { ... }
+```
+
+**3. Return Multiple Values**
+
+```c
+void get_min_max(int arr[], int size, int *min, int *max) {
+    *min = arr[0];
+    *max = arr[0];
+    for (int i = 1; i < size; i++) {
+        if (arr[i] < *min) *min = arr[i];
+        if (arr[i] > *max) *max = arr[i];
+    }
 }
+
+int minimum, maximum;
+get_min_max(numbers, 5, &minimum, &maximum);
 ```
 
-**In our project** (see [src/tictactoe.c](src/tictactoe.c)):
+### Pointers in This Project
+
+Almost every function takes a `GameState *` pointer:
+
 ```c
-void game_init(GameState *state) {
-    if (state == NULL) return;  // Safety check
+void game_init_session(GameState *state) {
+    if (state == NULL) return;  // Always check for NULL!
     
-    memset(state->board, CELL_EMPTY, 9 * sizeof(CellValue));
-    // state-> means "access member through pointer"
-    // Equivalent to: (*state).board
+    state->status = ONGOING;        // Arrow: access through pointer
+    state->move_count = 0;
+    board_init(state->board);       // Pass board array to another function
 }
 ```
 
-### Pointer Syntax Cheat Sheet
+### Struct Pointer Syntax
+
 ```c
-int *ptr;           // Declare a pointer to int
-int *ptr = &var;    // Initialize pointer to address of var
-*ptr = 10;          // Dereference: set the value at that address
-int val = *ptr;     // Dereference: read the value at that address
-ptr->member;        // Access struct member through pointer
-(*ptr).member;      // Same as above (less common)
+GameState game;
+GameState *ptr = &game;
+
+// These are equivalent:
+(*ptr).status = ONGOING;   // Dereference, then access member
+ptr->status = ONGOING;     // Arrow notation (preferred)
 ```
+
+### Common Pointer Mistakes
+
+```c
+int *ptr;                // ❌ Uninitialized - points to garbage!
+*ptr = 5;                // ❌ CRASH: writing to random memory
+
+int *ptr = NULL;         // ✅ Initialize to NULL if no value yet
+if (ptr != NULL) {       // ✅ Check before using
+    *ptr = 5;
+}
+```
+
+See [src/tictactoe.c](src/tictactoe.c) for pointer usage throughout.
 
 ---
 
 ## Functions
 
-Functions are reusable blocks of code:
+Functions are reusable blocks of code that take inputs, do work, and optionally return a result.
+
+### Anatomy of a Function
 
 ```c
-// Function declaration (in header file)
-int add(int a, int b);
-
-// Function definition (in source file)
 int add(int a, int b) {
-    return a + b;
+//↑     ↑         ↑
+//│     │         └── Parameters (inputs)
+//│     └── Function name
+//└── Return type
+
+    int sum = a + b;   // Body: the work
+    return sum;        // Return value (output)
 }
 
-// Usage
-int result = add(3, 4);  // result is 7
+// Usage:
+int result = add(3, 4);  // result = 7
 ```
 
-### Return Values
+### Declaration vs Definition
 
+**Declaration** (in `.h` file) - "This function exists"
 ```c
-void print_message(void) {
-    printf("Hello\n");
-    // No return statement means void return
-}
-
-int get_number(void) {
-    return 42;
-}
-```
-
-### Parameters vs Arguments
-```c
-void function(int parameter) {  // parameter = variable in function
-    // ...
-}
-
-function(5);  // 5 = the argument passed to the function
-```
-
-**In our project** (see [include/tictactoe.h](include/tictactoe.h)):
-```c
+// tictactoe.h
 int game_make_move(GameState *state, int position);
-//  ↑ return type    ↑ parameter 1    ↑ parameter 2
-
-// Returns 0 on success, -1 on failure
 ```
+
+**Definition** (in `.c` file) - "This is how it works"
+```c
+// tictactoe.c
+int game_make_move(GameState *state, int position) {
+    if (state == NULL) return -1;
+    // ... implementation ...
+    return 0;
+}
+```
+
+**Why separate?** Other files only need to know *what* functions exist (header), not *how* they work (source).
+
+### Return Type Conventions
+
+**`void`** - No return value
+```c
+void display_board(const GameState *state) {
+    printf("...");
+    // No return statement needed
+}
+```
+
+**`int` for success/failure** - 0 = success, -1 = error
+```c
+int game_make_move(GameState *state, int position) {
+    if (position < 0 || position >= BOARD_SIZE) {
+        return -1;  // Error: invalid position
+    }
+    // ... do the move ...
+    return 0;  // Success
+}
+
+// Usage:
+if (game_make_move(&game, pos) == -1) {
+    printf("Invalid move!\n");
+}
+```
+
+**`int` for boolean** - 0 = false, non-zero = true
+```c
+int game_is_over(GameState *state) {
+    return state->status != ONGOING;  // Returns 1 or 0
+}
+
+// Usage:
+if (game_is_over(&game)) {
+    printf("Game ended!\n");
+}
+```
+
+**Return the actual value** - For queries
+```c
+CellValue game_get_current_player(GameState *state) {
+    return (state->move_count % 2 == 0) ? CELL_X : CELL_O;
+}
+```
+
+### Parameters
+
+**Value parameters** - Copy of the value (original unchanged)
+```c
+void print_number(int n) {
+    n = n + 1;  // Only modifies the copy
+    printf("%d\n", n);
+}
+```
+
+**Pointer parameters** - Address of the value (can modify original)
+```c
+void increment(int *n) {
+    *n = *n + 1;  // Modifies the original variable
+}
+```
+
+**`const` parameters** - Promise not to modify
+```c
+void display_board(const GameState *state) {
+    // state->status = X_WINS;  // ❌ Compiler error!
+    printf("%d", state->status);  // ✅ Reading is OK
+}
+```
+
+### Static Functions (Private to File)
+
+```c
+// Only visible within this .c file
+static void update_status(GameState *state) {
+    // Helper function - not part of public API
+}
+
+// Visible to other files (via header)
+int game_make_move(GameState *state, int position) {
+    // ... 
+    update_status(state);  // Can call static function
+    return 0;
+}
+```
+
+### Zero-Parameter Functions
+
+**⚠️ C Gotcha:** `()` and `(void)` mean different things!
+
+```c
+int get_value();      // ❌ "Unknown number of parameters" (deprecated)
+int get_value(void);  // ✅ "Exactly zero parameters"
+```
+
+Always use `(void)` for functions with no parameters.
+
+See [include/tictactoe.h](include/tictactoe.h) for function declarations.
 
 ---
 
 ## Header Files
 
-Header files (`.h`) contain declarations; source files (`.c`) contain implementations:
+C code is split into two types of files:
+- **Header files (`.h`)** - Declarations ("what exists")
+- **Source files (`.c`)** - Definitions ("how it works")
 
-### Header File (`.h`)
+### Why Two File Types?
+
+Imagine you want to use `game_make_move()` from another file. You need to know:
+- What parameters does it take?
+- What does it return?
+
+You **don't** need to know how it's implemented. That's what headers provide.
+
+### Header File Example (`.h`)
+
 ```c
-// tictactoe.h - What functions are available
-#ifndef TICTACTOE_H
+// tictactoe.h - Public interface
+
+#ifndef TICTACTOE_H      // Include guard (prevents double-inclusion)
 #define TICTACTOE_H
 
-void game_init(GameState *state);
-int game_make_move(GameState *state, int position);
+#include "constants.h"   // Types we depend on
 
-#endif
+// Type definitions
+typedef struct {
+    CellValue board[9];
+    GameStatus status;
+    // ...
+} GameState;
+
+// Function declarations (no bodies!)
+void game_init_session(GameState *state);
+int game_make_move(GameState *state, int position);
+int game_is_over(GameState *state);
+
+#endif // TICTACTOE_H
 ```
 
-### Source File (`.c`)
-```c
-// tictactoe.c - How functions work
-#include "tictactoe.h"
+### Source File Example (`.c`)
 
-void game_init(GameState *state) {
-    // Implementation here
+```c
+// tictactoe.c - Implementation
+
+#include "tictactoe.h"    // Our own header first
+#include "board.h"        // Other project headers
+#include "ai.h"
+
+#include <stdlib.h>       // Standard library headers
+#include <time.h>
+
+// Function definitions (with bodies!)
+void game_init_session(GameState *state) {
+    if (state == NULL) return;
+    board_init(state->board);
+    state->status = ONGOING;
+    // ...
 }
 
 int game_make_move(GameState *state, int position) {
-    // Implementation here
+    // Full implementation here
 }
 ```
 
-**Why separate files?**
-- Users only need to see what functions exist (header)
-- Implementation details are hidden (source)
-- Prevents accidental circular dependencies
-- Easier to maintain large projects
-
 ### Include Guards
+
 ```c
-#ifndef TICTACTOE_H
-#define TICTACTOE_H
-// ... content ...
-#endif
+#ifndef TICTACTOE_H   // "If TICTACTOE_H is NOT defined..."
+#define TICTACTOE_H   // "...define it now"
+
+// Header content here
+
+#endif                // "End of the #ifndef block"
 ```
-Prevents the same header from being included twice (which would cause errors).
+
+**Purpose:** Prevent the same header from being included twice in one compilation, which would cause "redefinition" errors.
+
+**Common mistake:** Copy-pasting a header and forgetting to change the guard name:
+```c
+// board.h - WRONG!
+#ifndef TICTACTOE_H   // ❌ Should be BOARD_H
+#define TICTACTOE_H
+```
+
+### Include Order Convention
+
+```c
+// In tictactoe.c:
+#include "tictactoe.h"        // 1. Own header first
+#include "board.h"            // 2. Other project headers
+#include "win_condition_calculator.h"
+
+#include <assert.h>           // 3. Standard library headers
+#include <stdlib.h>
+#include <time.h>
+```
+
+**Why own header first?** Catches missing includes in the header itself.
+
+### What Goes Where?
+
+| In Header (`.h`) | In Source (`.c`) |
+|------------------|------------------|
+| Type definitions (`typedef`, `struct`) | Function implementations |
+| Function declarations | `static` helper functions |
+| `#define` constants | Local variables |
+| `extern` variable declarations | `#include` for implementation needs |
+
+See [include/](include/) for all header files.
 
 ---
 
 ## Memory Management
 
-### Stack vs Heap
+Understanding where variables live in memory is crucial in C.
 
-**Stack:** Automatic memory (fast, limited size)
+### Stack Memory (Automatic)
+
+Variables declared inside functions live on the **stack**:
+
 ```c
-GameState game;  // Automatically cleaned up when variable goes out of scope
-game_init(&game);
+void play_game(void) {
+    GameState game;        // Created on stack
+    game_init_session(&game);
+    // ... use game ...
+}   // game is automatically destroyed here
 ```
 
-**Heap:** Manual memory (slow, larger size)
+**Characteristics:**
+- ✅ Fast allocation/deallocation
+- ✅ Automatic cleanup when function returns
+- ❌ Limited size (~1-8 MB typically)
+- ❌ Cannot outlive the function
+
+### Heap Memory (Manual)
+
+For larger or longer-lived data, use the **heap**:
+
 ```c
+#include <stdlib.h>
+
 GameState *game = malloc(sizeof(GameState));  // Allocate
-game_init(game);
-free(game);  // Must manually free!
+if (game == NULL) {
+    // Handle allocation failure!
+}
+game_init_session(game);
+// ... use game ...
+free(game);              // MUST free manually!
+game = NULL;             // Good practice: prevent dangling pointer
 ```
 
-**In our project:** We use stack allocation for simplicity. The interactive game in [src/main.c](src/main.c):
+**Characteristics:**
+- ✅ Large size (gigabytes available)
+- ✅ Lives until explicitly freed
+- ❌ Slower than stack
+- ❌ Must manually free (memory leak if forgotten!)
+- ❌ Must check for allocation failure
+
+### This Project Uses Stack Only
+
+For simplicity, we allocate `GameState` on the stack:
+
 ```c
-GameState game;       // Stack allocation
-game_init(&game);     // Initialize
-game_make_move(&game, position);
+// main.c
+int main(void) {
+    GameState game;           // Stack allocation
+    game_init_session(&game); // Pass address to functions
+    
+    // ... play the game ...
+    
+    return 0;  // game automatically cleaned up
+}
 ```
 
-### Common Errors
+**Why stack is fine here:**
+- `GameState` is small (~100 bytes)
+- Only one game exists at a time
+- Lifetime matches the program
+
+### When to Use Heap
+
+Use `malloc()` when:
+- Data is too large for stack (arrays of thousands of elements)
+- Data must outlive the function that creates it
+- Size isn't known at compile time
+- Building data structures (linked lists, trees)
+
+### Memory Errors to Avoid
+
+**1. Uninitialized pointers:**
+```c
+int *ptr;           // ❌ Points to garbage!
+*ptr = 5;           // ❌ Crash or corruption
+```
+
+**2. Use after free:**
+```c
+int *ptr = malloc(sizeof(int));
+free(ptr);
+*ptr = 10;          // ❌ Undefined behavior!
+```
+
+**3. Memory leaks:**
+```c
+void leak(void) {
+    int *ptr = malloc(sizeof(int));
+    return;          // ❌ Never freed! Memory leaked.
+}
+```
+
+**4. Double free:**
+```c
+free(ptr);
+free(ptr);          // ❌ Crash!
+```
+
+**5. Dangling pointer (stack):**
+```c
+int *get_value(void) {
+    int x = 42;
+    return &x;       // ❌ x is destroyed when function returns!
+}
+
+int *ptr = get_value();
+*ptr;                // ❌ Accessing invalid memory
+```
+
+### Best Practices
 
 ```c
-int *ptr;           // Uninitialized pointer - DANGEROUS!
-*ptr = 5;           // Undefined behavior - likely a crash
+// Initialize pointers
+int *ptr = NULL;
 
-int x = 5;
-int *ptr = &x;
-// x goes out of scope
-*ptr;               // Now ptr points to invalid memory!
+// Check malloc result
+ptr = malloc(sizeof(int));
+if (ptr == NULL) {
+    fprintf(stderr, "Out of memory!\n");
+    exit(1);
+}
 
-free(ptr);          // Freeing unallocated memory - CRASH!
-ptr = NULL;         // Good practice after freeing
+// Set to NULL after freeing
+free(ptr);
+ptr = NULL;
+
+// Use tools to detect leaks
+// valgrind --leak-check=full ./program
 ```
 
 ---
 
-## Common C Patterns in This Project
+## Separation of Concerns
 
-### 1. NULL Pointer Checks
+**The single most important principle:** Each module should do ONE thing well.
+
+### The Problem: "God Objects"
+
+When one file does everything, you get:
+- 🔴 Files with 500+ lines that are hard to navigate
+- 🔴 Changing one feature breaks unrelated features
+- 🔴 Can't test pieces in isolation
+- 🔴 Multiple developers can't work simultaneously
+
+### The Solution: Single Responsibility
+
+Ask: *"If I had to describe what this file does in one sentence, could I?"*
+
+| File | One Sentence | Lines |
+|------|--------------|-------|
+| `board.c` | Manages a 3×3 array of cells | 32 |
+| `win_condition_calculator.c` | Checks if someone won or it's a draw | 31 |
+| `ai.c` | Picks the optimal move (minimax) | 79 |
+| `ai_easy.c` | Picks a random valid move | 25 |
+| `tictactoe.c` | Coordinates a game session | 169 |
+| `display.c` | Renders the board and messages | 53 |
+| `human.c` | Gets input from the user | 72 |
+
+If your sentence has "and" in it, you might need to split.
+
+### How We Split This Project
+
+**Step 1: Identify the data**
 ```c
-void game_init(GameState *state) {
-    if (state == NULL) return;  // Defensive programming
-    // ...
-}
+// What's the core data? A 9-cell board.
+CellValue board[9];
 ```
-Always check pointers for NULL before using them!
 
-### 2. Error Return Values
+**Step 2: Identify operations on that data**
 ```c
+// board.c - Pure data operations
+void board_init(CellValue board[BOARD_SIZE]);
+int board_place(CellValue board[BOARD_SIZE], int position, CellValue symbol);
+int board_is_empty(const CellValue board[BOARD_SIZE], int position);
+```
+
+**Step 3: Identify algorithms that use the data**
+```c
+// win_condition_calculator.c - Algorithm, no side effects
+CellValue wcc_check_winner(const CellValue board[BOARD_SIZE]);
+int wcc_is_draw(const CellValue board[BOARD_SIZE], int move_count);
+```
+
+**Step 4: Identify coordination logic**
+```c
+// tictactoe.c - Calls other modules, manages state
 int game_make_move(GameState *state, int position) {
-    if (state == NULL || position < 0 || position > 8) {
-        return -1;  // Error code
-    }
-    // Success code: return 0
+    CellValue current = game_get_current_player(state);
+    if (board_place(state->board, position, current) != 0) return -1;
+    state->move_count++;
+    update_status(state);  // calls wcc_check_winner internally
     return 0;
 }
 ```
 
-### 3. Static Functions (File-Local Functions)
+**Step 5: Separate I/O from logic**
 ```c
-// In tictactoe.c
-static CellValue check_winner(const CellValue board[9]) {
-    // This function is only visible in this file
-    // Not accessible from other files
-}
-```
-Helps with organization and prevents accidental usage.
+// display.c - Output only, no game logic
+void display_board(const GameState *state);
 
-### 4. Const Correctness
+// human.c - Input only, validates then returns
+int human_get_move(GameState *game);
+```
+
+### Dependency Rules
+
+```
+┌─────────────────────────────────────────────────┐
+│  main.c  (entry point, wires everything)        │
+└─────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────┐
+│  tictactoe.c  (game coordinator)                │
+│  - Calls board.c, ai.c, win_condition_calc...   │
+└─────────────────────────────────────────────────┘
+         │
+         ▼
+┌──────────────┐  ┌──────────────┐  ┌─────────────┐
+│  board.c     │  │  ai.c        │  │  display.c  │
+│  (data ops)  │  │  (algorithm) │  │  (output)   │
+└──────────────┘  └──────────────┘  └─────────────┘
+         │                │
+         ▼                ▼
+┌─────────────────────────────────────────────────┐
+│  win_condition_calculator.c  (pure function)    │
+└─────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────┐
+│  constants.h  (types and constants only)        │
+└─────────────────────────────────────────────────┘
+```
+
+**Rule:** Arrows point DOWN only. Lower modules never `#include` higher modules.
+
+### Practical Test: Can You Swap?
+
+Good separation means you can swap implementations:
+
 ```c
-// Function doesn't modify the board
-void display_board(const GameState *state) {
-    // Compiler error if we try: state->board[0] = CELL_X;
+// Easy to add a new AI without touching tictactoe.c
+int ai_medium_get_computer_move(GameState *state);  // New file!
+
+// tictactoe.c just needs one more case:
+if (state->difficulty == DIFFICULTY_MEDIUM) {
+    return ai_medium_get_computer_move(state);
 }
 ```
+
+If adding a feature requires editing many files, your separation might need work.
 
 ---
 
-## Testing Concepts (Unity Framework)
+## API Design
 
-Tests verify that functions work correctly:
+An **API** (Application Programming Interface) is the set of functions you expose for others to use. Good API design makes code easy to use correctly and hard to use incorrectly.
+
+### Principle 1: Consistent Naming Convention
+
+Pick a pattern and stick to it:
 
 ```c
-void test_game_init_creates_empty_board(void) {
-    GameState game;
-    game_init(&game);
+// Pattern: module_verb_noun or module_verb
+
+// ✅ All game functions start with game_
+void game_init_session(GameState *state);
+void game_new_game(GameState *state);
+int  game_make_move(GameState *state, int position);
+int  game_is_over(GameState *state);
+int  game_is_valid_move(GameState *state, int position);
+
+// ✅ All board functions start with board_
+void board_init(CellValue board[BOARD_SIZE]);
+int  board_place(CellValue board[BOARD_SIZE], int position, CellValue symbol);
+int  board_is_empty(const CellValue board[BOARD_SIZE], int position);
+
+// ✅ All win condition functions start with wcc_
+CellValue wcc_check_winner(const CellValue board[BOARD_SIZE]);
+int       wcc_is_draw(const CellValue board[BOARD_SIZE], int move_count);
+```
+
+**Benefit:** You can guess function names without looking them up.
+
+### Principle 2: Predictable Return Values
+
+Choose a convention and document it:
+
+| Pattern | Meaning | Example |
+|---------|---------|---------|
+| `int` returns 0/-1 | 0 = success, -1 = error | `game_make_move()` |
+| `int` returns 0/1 | 0 = false, non-zero = true | `game_is_over()` |
+| Enum/value return | The actual result | `game_get_current_player()` |
+| `void` return | Always succeeds (or asserts) | `board_init()` |
+
+```c
+// Caller knows exactly what to expect:
+if (game_make_move(&game, pos) == -1) {
+    printf("Move failed\n");
+}
+
+if (game_is_over(&game)) {
+    printf("Game ended\n");
+}
+
+CellValue player = game_get_current_player(&game);  // Always valid
+```
+
+### Principle 3: First Parameter is the "Object"
+
+In C, we simulate object-oriented style by passing the struct first:
+
+```c
+// The struct being operated on is always first
+void game_init_session(GameState *state);
+int  game_make_move(GameState *state, int position);
+int  game_is_over(GameState *state);
+
+// Makes calling code read naturally:
+game_init_session(&game);
+game_make_move(&game, 4);
+game_is_over(&game);
+```
+
+### Principle 4: Minimize Required Knowledge
+
+Each module should require the **minimum** knowledge to use:
+
+```c
+// board.c only needs to know about CellValue (a simple enum)
+// It does NOT need to know about GameState, Player, or Difficulty
+int board_place(CellValue board[BOARD_SIZE], int position, CellValue symbol);
+
+// tictactoe.c knows about GameState and adapts for callers
+int game_make_move(GameState *state, int position) {
+    CellValue current = game_get_current_player(state);  // Figures out symbol
+    return board_place(state->board, position, current);  // Delegates
+}
+```
+
+**Benefit:** `board.c` can be reused in a completely different game.
+
+### Principle 5: Symmetric Operations
+
+If you can do something, you should be able to undo it or query it:
+
+```c
+// Set and get are symmetric
+void game_set_difficulty(GameState *state, Difficulty difficulty);
+// Missing: Difficulty game_get_difficulty(GameState *state);  // Could add!
+
+// Init and cleanup are symmetric (if cleanup is needed)
+void game_init_session(GameState *state);  // Setup
+// void game_cleanup(GameState *state);    // Would add if we used malloc
+```
+
+### Principle 6: Named Constants for All Literals
+
+```c
+// ❌ What does 9 mean? What does 8 mean?
+for (int i = 0; i < 9; i++) { ... }
+const int combos[8][3] = { ... };
+
+// ✅ Self-documenting
+#define BOARD_SIZE     9
+#define NUM_WIN_COMBOS 8
+
+for (int i = 0; i < BOARD_SIZE; i++) { ... }
+const int combos[NUM_WIN_COMBOS][3] = { ... };
+```
+
+### Anti-Pattern: Exposing Internal State
+
+```c
+// ❌ BAD: Caller must know internal rules
+game.game_count = 0;  // Why? What breaks if I don't?
+game_set_human_symbol_choice(&game, choice);
+game.game_count = 1;  // Magic incantation
+
+// ✅ GOOD: API handles the complexity
+game_set_winner_symbol_choice(&game, choice);  // Just works
+```
+
+**Rule:** If callers need to manipulate struct fields directly to use your API, your API is incomplete.
+
+---
+
+## Defensive Programming
+
+Defensive programming means **assuming things will go wrong** and writing code that handles failures gracefully.
+
+### Decision Tree: How Should I Handle This?
+
+```
+Is this a PROGRAMMER error (bug)?
+    │
+    ├── YES → Use assert() — crash immediately in debug
+    │         Examples: NULL where API requires valid pointer,
+    │                   function called in wrong state
+    │
+    └── NO → Is this USER/RUNTIME error?
+              │
+              ├── YES → Return error code — let caller handle
+              │         Examples: invalid input, file not found,
+              │                   position already occupied
+              │
+              └── Can't happen → Still check anyway!
+                                 Use assert() as documentation
+```
+
+### Technique 1: NULL Pointer Guards
+
+**Every public function should check its pointer parameters:**
+
+```c
+void game_init_session(GameState *state) {
+    if (state == NULL) {
+        return;  // Graceful exit — don't crash
+    }
+    // Safe to dereference state
+    state->status = ONGOING;
+}
+```
+
+**Pattern:** Check at the top, return early.
+
+```c
+int game_make_move(GameState *state, int position) {
+    // All guards first, all in one place
+    if (state == NULL) return -1;
+    if (state->status != ONGOING) return -1;
+    if (position < 0 || position >= BOARD_SIZE) return -1;
     
-    // Assert that board is empty
-    for (int i = 0; i < 9; i++) {
-        TEST_ASSERT_EQUAL(CELL_EMPTY, game.board[i]);
+    // Now do the actual work
+    // ...
+}
+```
+
+### Technique 2: Assertions for Invariants
+
+Use `assert()` for conditions that **should never be false** if the code is correct:
+
+```c
+#include <assert.h>
+
+int ai_get_computer_move(GameState *state) {
+    // This function should only be called via game_get_computer_move,
+    // which already validated state. If state is NULL, that's a bug.
+    assert(state != NULL);
+    
+    // ... calculate best_move ...
+    
+    // If the board isn't full, we must find a move. If we don't,
+    // there's a bug in our algorithm.
+    assert(best_move != -1);
+    
+    return best_move;
+}
+```
+
+**Key insight:** Assertions are **removed** in release builds (`-DNDEBUG`), so:
+- ✅ Use for internal consistency checks
+- ❌ Don't use for user input validation (would disappear in production!)
+
+### Technique 3: Error Return Codes
+
+For recoverable errors, return a status code:
+
+```c
+// Convention: 0 = success, -1 = error
+int board_place(CellValue board[BOARD_SIZE], int position, CellValue symbol) {
+    if (position < 0 || position >= BOARD_SIZE) {
+        return -1;  // Out of bounds — caller can retry with valid input
+    }
+    if (board[position] != CELL_EMPTY) {
+        return -1;  // Already occupied — caller can choose another cell
+    }
+    board[position] = symbol;
+    return 0;
+}
+
+// Caller handles the error:
+if (board_place(board, pos, CELL_X) == -1) {
+    printf("Invalid move, try again\n");
+}
+```
+
+### Technique 4: Const Correctness
+
+Mark read-only data as `const` so the compiler enforces it:
+
+```c
+// Promise: this function won't modify the board
+CellValue wcc_check_winner(const CellValue board[BOARD_SIZE]) {
+    // board[0] = CELL_X;  // ❌ Compiler error!
+    return board[0];        // ✅ Reading is fine
+}
+
+// Promise: this function won't modify state
+void display_board(const GameState *state) {
+    // state->status = X_WINS;  // ❌ Compiler error!
+    printf("%d", state->status); // ✅ Reading is fine
+}
+```
+
+**Benefits:**
+1. **Documents intent** — readers know what won't change
+2. **Compiler-enforced** — mistakes become compile errors
+3. **Enables optimizations** — compiler can make assumptions
+
+### Technique 5: Bounds Checking
+
+**C does not check array bounds.** You must do it yourself.
+
+```c
+int board_is_empty(const CellValue board[BOARD_SIZE], int position) {
+    // ⚠️ No bounds check! Caller must pass valid index.
+    // This is OK because it's an internal function and the
+    // public API (board_is_valid_move) does the check.
+    return board[position] == CELL_EMPTY;
+}
+
+int board_is_valid_move(const CellValue board[BOARD_SIZE], int position) {
+    // ✅ Public function: validate first
+    if (position < 0 || position >= BOARD_SIZE) {
+        return 0;  // Invalid
+    }
+    return board_is_empty(board, position);
+}
+```
+
+**Rule:** Public functions validate; private functions can trust their callers.
+
+### Technique 6: Fail Fast, Fail Loud
+
+**❌ Silent failure (bad):**
+```c
+int ai_get_computer_move(GameState *state) {
+    if (state == NULL) {
+        return 4;  // Silently return center — masks bugs!
     }
 }
 ```
 
-**Why write tests?**
-- Catch bugs early
-- Document how code should behave
-- Safe to refactor (tests guarantee nothing broke)
-- Cheaper than finding bugs in production
+**✅ Loud failure (good):**
+```c
+int ai_get_computer_move(GameState *state) {
+    assert(state != NULL);  // Crash immediately — bug is obvious
+}
+```
 
-See [tests/test_tictactoe.c](tests/test_tictactoe.c) for 15+ examples.
+**Principle:** Bugs should be **painful** during development so they get fixed, not hidden.
+
+---
+
+## Testing
+
+### Why Write Tests?
+
+| Benefit | Without Tests | With Tests |
+|---------|---------------|------------|
+| Finding bugs | Discover in production | Discover immediately |
+| Changing code | "Did I break something?" | Run tests and know |
+| Documentation | Read the implementation | Read the test names |
+| Onboarding | "How does this work?" | "Look at the tests" |
+
+### The Testing Mindset
+
+**Don't ask:** "Does my code work?"  
+**Ask:** "What are all the ways my code could fail?"
+
+```c
+// For board_place(), ask:
+// - What if position is negative?
+// - What if position is 9 (one past the end)?
+// - What if the cell is already occupied?
+// - What if I pass CELL_EMPTY as the symbol?
+// - Does it actually write the value?
+```
+
+### Test Structure: Arrange-Act-Assert
+
+Every test follows this pattern:
+
+```c
+void test_board_place_writes_symbol_to_cell(void) {
+    // ARRANGE: Set up the test scenario
+    CellValue board[BOARD_SIZE];
+    board_init(board);
+
+    // ACT: Do the thing being tested
+    int result = board_place(board, 4, CELL_X);
+
+    // ASSERT: Verify the results
+    TEST_ASSERT_EQUAL(0, result);           // Return value
+    TEST_ASSERT_EQUAL(CELL_X, board[4]);    // Side effect
+}
+```
+
+### Test Naming Convention
+
+Name tests so you can read them like a sentence:
+
+```c
+// Pattern: test_<function>_<scenario>_<expected>
+void test_board_place_on_occupied_cell_returns_error(void);
+void test_board_place_with_negative_position_returns_error(void);
+void test_game_make_move_after_game_over_is_rejected(void);
+void test_x_wins_when_completing_top_row(void);
+```
+
+**When a test fails, the name tells you exactly what broke.**
+
+### What to Test: The Testing Pyramid
+
+```
+        /\
+       /  \  Edge cases (weird inputs, boundaries)
+      /----\
+     /      \  Error cases (what should fail)
+    /--------\
+   /          \  Happy path (normal usage)
+  /------------\
+```
+
+**1. Happy Path** — Does it work when used correctly?
+```c
+void test_board_place_writes_symbol_to_cell(void) {
+    CellValue board[BOARD_SIZE];
+    board_init(board);
+    
+    int result = board_place(board, 0, CELL_X);
+    
+    TEST_ASSERT_EQUAL(0, result);
+    TEST_ASSERT_EQUAL(CELL_X, board[0]);
+}
+```
+
+**2. Error Cases** — Does it reject invalid input?
+```c
+void test_board_place_returns_error_on_negative_position(void) {
+    CellValue board[BOARD_SIZE];
+    board_init(board);
+    
+    TEST_ASSERT_EQUAL(-1, board_place(board, -1, CELL_X));
+}
+
+void test_board_place_returns_error_on_occupied_cell(void) {
+    CellValue board[BOARD_SIZE];
+    board_init(board);
+    board_place(board, 0, CELL_X);
+    
+    TEST_ASSERT_EQUAL(-1, board_place(board, 0, CELL_O));
+}
+```
+
+**3. Edge Cases** — Does it handle boundaries correctly?
+```c
+void test_board_place_at_last_valid_position(void) {
+    CellValue board[BOARD_SIZE];
+    board_init(board);
+    
+    TEST_ASSERT_EQUAL(0, board_place(board, BOARD_SIZE - 1, CELL_X));
+}
+
+void test_board_place_at_first_invalid_position(void) {
+    CellValue board[BOARD_SIZE];
+    board_init(board);
+    
+    TEST_ASSERT_EQUAL(-1, board_place(board, BOARD_SIZE, CELL_X));
+}
+```
+
+**4. State Preservation** — Does failure leave things unchanged?
+```c
+void test_board_place_does_not_modify_board_on_failure(void) {
+    CellValue board[BOARD_SIZE];
+    board_init(board);
+    
+    board_place(board, 100, CELL_X);  // Invalid position
+    
+    // Board should be completely unchanged
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        TEST_ASSERT_EQUAL(CELL_EMPTY, board[i]);
+    }
+}
+```
+
+### Test Coverage in This Project
+
+| Test File | Tests | What's Covered |
+|-----------|-------|----------------|
+| `test_board.c` | 12 | init, place, is_empty, is_valid_move |
+| `test_win_condition_calculator.c` | 14 | All 8 winning lines, draws, partial boards |
+| `test_tictactoe.c` | 58 | All API functions, game flow, AI behavior |
+| **Total** | **84** | |
+
+### Running Tests
+
+```bash
+# Run all tests
+~/.gem/ruby/2.6.0/bin/ceedling test:all
+
+# Expected output:
+# TESTED:  84
+# PASSED:  84
+# FAILED:   0
+```
+
+### When Tests Fail
+
+A failing test tells you:
+1. **What** broke (the test name)
+2. **Where** it broke (file and line number)
+3. **Expected vs Actual** values
+
+```
+test_board_place_writes_symbol_to_cell: FAIL
+  Expected: CELL_X (1)
+  Actual:   CELL_EMPTY (0)
+  at test_board.c:45
+```
+
+**Don't change the test to make it pass.** Fix the code!
+
+---
+
+## Code Smells and Refactoring
+
+A **code smell** is a pattern that suggests something might be wrong. Not necessarily a bug, but a sign of deeper problems.
+
+### How to Spot Smells
+
+| Symptom | Possible Smell |
+|---------|----------------|
+| Function > 50 lines | God function |
+| File > 300 lines | Missing separation of concerns |
+| Copy-pasted code | Missing abstraction |
+| Lots of `if/else` chains | Missing polymorphism or lookup table |
+| Magic numbers everywhere | Missing named constants |
+| Caller manipulates struct fields | Incomplete API |
+| Comments explaining tricky code | Code should be clearer |
+
+### Smell 1: Magic Numbers
+
+**Symptom:** Unexplained numeric literals
+
+```c
+// ❌ What do these numbers mean?
+for (int i = 0; i < 9; i++) {
+    if (board[i] == 0) { ... }
+}
+if (combos[7][2] == position) { ... }
+```
+
+**Fix:** Extract named constants
+
+```c
+// ✅ Self-documenting
+#define BOARD_SIZE     9
+#define NUM_WIN_COMBOS 8
+#define CELL_EMPTY     0
+
+for (int i = 0; i < BOARD_SIZE; i++) {
+    if (board[i] == CELL_EMPTY) { ... }
+}
+```
+
+**Why it matters:** When you need to change the board size, you change ONE place, not 47.
+
+### Smell 2: God Function
+
+**Symptom:** A function that does too many things
+
+```c
+// ❌ This function: validates, places, checks wins, checks draws, updates status
+int game_make_move(GameState *state, int position) {
+    // 50+ lines of mixed responsibilities
+}
+```
+
+**Fix:** Extract helper functions and delegate
+
+```c
+// ✅ Each function does one thing
+int game_make_move(GameState *state, int position) {
+    if (state == NULL || state->status != ONGOING) return -1;
+    
+    CellValue current = game_get_current_player(state);      // Query
+    if (board_place(state->board, position, current) != 0) { // Delegate
+        return -1;
+    }
+    
+    state->move_count++;
+    update_status(state);  // Delegate
+    return 0;
+}
+
+static void update_status(GameState *state) {
+    CellValue winner = wcc_check_winner(state->board);  // Delegate
+    if (winner == CELL_X) {
+        state->status = X_WINS;
+        state->last_winner = CELL_X;
+    } else if (winner == CELL_O) {
+        state->status = O_WINS;
+        state->last_winner = CELL_O;
+    } else if (wcc_is_draw(state->board, state->move_count)) {
+        state->status = DRAW;
+    }
+}
+```
+
+### Smell 3: Leaking Abstraction
+
+**Symptom:** Caller has to know internal rules to use the API
+
+```c
+// ❌ Caller must manipulate internal state to make API work
+game.game_count = 0;  // Magic ritual #1
+game_set_human_symbol_choice(&game, choice);
+game.game_count = 1;  // Magic ritual #2
+```
+
+**Fix:** Provide a proper API function
+
+```c
+// ✅ New function that handles the complexity internally
+void game_set_winner_symbol_choice(GameState *state, CellValue winner_symbol) {
+    if (state == NULL) return;
+    // No game_count check — can be called anytime
+    // ... set player types ...
+}
+
+// Caller just uses it
+game_set_winner_symbol_choice(&game, choice);
+```
+
+**Rule:** If callers need to touch struct fields directly, your API is incomplete.
+
+### Smell 4: Duplicated Logic
+
+**Symptom:** Same code pattern appears in multiple places
+
+```c
+// ❌ Win-checking logic duplicated in tictactoe.c AND ai.c
+static CellValue check_winner(const CellValue board[9]) {
+    const int combos[8][3] = { ... };
+    for (int i = 0; i < 8; i++) {
+        // ... same logic ...
+    }
+}
+```
+
+**Fix:** Extract to a single module
+
+```c
+// ✅ win_condition_calculator.c owns this logic
+CellValue wcc_check_winner(const CellValue board[BOARD_SIZE]);
+
+// Everyone else calls it:
+// tictactoe.c
+CellValue winner = wcc_check_winner(state->board);
+
+// ai.c
+CellValue winner = wcc_check_winner(board);
+```
+
+### Smell 5: Silent Failure
+
+**Symptom:** Errors are hidden instead of reported
+
+```c
+// ❌ Returns a plausible value instead of signaling failure
+int ai_get_computer_move(GameState *state) {
+    if (state == NULL) {
+        return 4;  // Center — looks valid, masks the bug
+    }
+}
+```
+
+**Fix:** Fail loudly in development
+
+```c
+// ✅ Bug is immediately visible
+int ai_get_computer_move(GameState *state) {
+    assert(state != NULL);  // Crash with stack trace
+    // ...
+}
+```
+
+**Principle:** Make bugs painful during development so they get fixed.
+
+### Smell 6: Obsolete Code
+
+**Symptom:** Unused constants, functions, or includes
+
+```c
+// ❌ This constant was added, used, then the usage was removed
+#define BOARD_CENTER 4  // Nobody uses this anymore
+
+// ❌ This include isn't needed
+#include <stdint.h>  // No int32_t or uint8_t used
+```
+
+**Fix:** Delete it!
+
+```bash
+# Find unused code
+grep -r "BOARD_CENTER" src/ include/  # If no results, delete it
+```
+
+### Smell 7: Inconsistent Style
+
+**Symptom:** Mixed conventions in the same codebase
+
+```c
+// ❌ Some comments use //, some use /* */
+int x = 5;  // inline comment
+/* block comment */
+int y = 10;
+
+// ❌ Some functions use () for no params, some use (void)
+int newline();      // Deprecated style
+int get_count(void); // Correct style
+```
+
+**Fix:** Pick one convention and apply everywhere
+
+```c
+// ✅ Consistent style throughout
+int newline(void);
+int get_count(void);
+
+/* All comments use the same style */
+```
+
+### Refactoring Checklist
+
+Before committing changes, ask:
+
+- [ ] Did I remove any magic numbers?
+- [ ] Is each function < 50 lines?
+- [ ] Is each file < 300 lines?
+- [ ] Did I eliminate any copy-pasted code?
+- [ ] Do tests still pass?
+- [ ] Did I remove any dead code?
+- [ ] Is the naming consistent?
+
+---
+
+## C Pitfalls and How to Avoid Them
+
+### Pitfall 1: Missing Include for NULL
+
+**❌ Error:**
+```c
+// ai.c
+if (state == NULL) { ... }
+// Compiler: error: use of undeclared identifier 'NULL'
+```
+
+**✅ Fix:**
+```c
+#include <stdlib.h>  // Defines NULL
+
+if (state == NULL) { ... }
+```
+
+**Why:** `NULL` is not a keyword in C - it's defined in several headers (`<stdlib.h>`, `<stdio.h>`, `<string.h>`, etc.). Always include the appropriate header.
+
+### Pitfall 2: Empty Parameter List `()`
+
+**❌ Wrong:**
+```c
+int newline();  // Means "unknown number of arguments" in C!
+```
+
+**✅ Correct:**
+```c
+int newline(void);  // Means "exactly zero arguments"
+```
+
+**Why:** In C (unlike C++), `()` declares a function with an **unspecified** number of parameters. This is deprecated and generates warnings under `-Wstrict-prototypes`. Always use `(void)` for no-parameter functions.
+
+**Real project error:**
+```
+warning: a function declaration without a prototype is deprecated in all versions of C [-Wstrict-prototypes]
+    int newline();
+                ^
+                 void
+```
+
+### Pitfall 3: Missing Newline at End of File
+
+**❌ Error:**
+```c
+// ai.c - last line
+}
+// ^ No newline after closing brace
+```
+
+**Compiler warning:**
+```
+warning: no newline at end of file [-Wnewline-eof]
+```
+
+**✅ Fix:** Ensure every source file ends with a newline character.
+
+**Why:** The C standard requires all source files to end with a newline. Some compilers/tools break without it.
+
+### Pitfall 4: Array Out of Bounds
+
+**❌ Dangerous:**
+```c
+CellValue board[9];
+board[9] = CELL_X;  // OUT OF BOUNDS! Undefined behavior
+```
+
+**Why it's bad:**
+- No runtime error
+- Corrupts adjacent memory
+- Hard to debug crashes later
+
+**✅ Prevention:**
+```c
+int board_place(CellValue board[BOARD_SIZE], int position, CellValue symbol) {
+    if (position < 0 || position >= BOARD_SIZE) {
+        return -1;  // Bounds check BEFORE access
+    }
+    board[position] = symbol;
+    return 0;
+}
+```
+
+### Pitfall 5: Off-by-One Errors
+
+**❌ Common mistake:**
+```c
+for (int i = 0; i <= 9; i++) {  // Should be i < 9
+    board[i] = CELL_EMPTY;      // board[9] is out of bounds!
+}
+```
+
+**✅ Correct:**
+```c
+for (int i = 0; i < BOARD_SIZE; i++) {
+    board[i] = CELL_EMPTY;
+}
+```
+
+**Remember:** Arrays are **0-indexed**. An array of size 9 has indices 0-8.
+
+### Pitfall 6: Pointer Dereferencing NULL
+
+**❌ Crash:**
+```c
+void game_init(GameState *state) {
+    state->status = ONGOING;  // CRASH if state is NULL!
+}
+```
+
+**✅ Defensive:**
+```c
+void game_init(GameState *state) {
+    if (state == NULL) return;  // Guard
+    state->status = ONGOING;     // Now safe
+}
+```
+
+### Pitfall 7: Uninitialized Variables
+
+**❌ Undefined Behavior:**
+```c
+int best_move;  // Garbage value!
+// ... maybe assign, maybe not ...
+return best_move;  // Could be anything!
+```
+
+**✅ Always Initialize:**
+```c
+int best_move = -1;  // Sentinel value
+```
+
+### Pitfall 8: Silent Integer Promotion
+
+**❌ Subtle bug:**
+```c
+char a = 200;
+char b = 100;
+char result = a + b;  // Overflow! Result is implementation-defined
+```
+
+**Why:** Arithmetic operations promote small types to `int`. The sum (300) overflows when cast back to `char`.
+
+**✅ Awareness:**
+```c
+// Use appropriate types for the value range
+int result = a + b;  // No overflow if result fits in int
+```
+
+### Pitfall 9: `=` vs `==`
+
+**❌ Assignment instead of comparison:**
+```c
+if (state->status = ONGOING) {  // ALWAYS true! Assigns ONGOING to status
+    // ...
+}
+```
+
+**✅ Comparison:**
+```c
+if (state->status == ONGOING) {  // Correct comparison
+    // ...
+}
+```
+
+**Prevention:** Enable warnings: `-Wall -Wextra`
+
+### Pitfall 10: String Literals Are Immutable
+
+**❌ Crash:**
+```c
+char *str = "Hello";
+str[0] = 'h';  // SEGFAULT! String literals are in read-only memory
+```
+
+**✅ Mutable String:**
+```c
+char str[] = "Hello";  // Array copy - mutable
+str[0] = 'h';          // OK
+```
+
+### Pitfall 11: `scanf` Buffer Overflow
+
+**❌ Dangerous:**
+```c
+char name[10];
+scanf("%s", name);  // User can type 100 characters - BUFFER OVERFLOW!
+```
+
+**✅ Safe:**
+```c
+char name[10];
+scanf("%9s", name);  // Max 9 chars + null terminator
+```
+
+**Better:** Use `fgets()` for string input.
+
+### Pitfall 12: Forgetting `break` in `switch`
+
+**❌ Fall-through:**
+```c
+switch (cell) {
+    case CELL_X:
+        printf("X");
+        // FALLS THROUGH to next case!
+    case CELL_O:
+        printf("O");
+        break;
+}
+```
+
+**✅ Explicit:**
+```c
+switch (cell) {
+    case CELL_X:
+        printf("X");
+        break;  // Explicit break
+    case CELL_O:
+        printf("O");
+        break;
+}
+```
+
+### Pitfall 13: Ignoring Return Values
+
+**❌ Silent Failure:**
+```c
+scanf("%d", &position);  // Returns number of items read
+// What if scanf fails?
+```
+
+**✅ Check Returns:**
+```c
+if (scanf("%d", &position) != 1) {
+    clear_input_buffer();
+    printf("Invalid input.\n");
+    continue;
+}
+```
+
+### Pitfall 14: `memset` with Non-Zero Values
+
+**❌ Only works for 0 and -1:**
+```c
+int arr[10];
+memset(arr, 5, sizeof(arr));  // Does NOT set each int to 5!
+// Sets each BYTE to 5, resulting in 0x05050505 per int
+```
+
+**✅ Loop for non-zero:**
+```c
+for (int i = 0; i < 10; i++) {
+    arr[i] = 5;
+}
+```
+
+**Or use with enums:**
+```c
+CellValue board[9];
+memset(board, CELL_EMPTY, sizeof(board));  // OK if CELL_EMPTY is 0
+```
+
+### Pitfall 15: Header Guard Typos
+
+**❌ Copy-paste error:**
+```c
+// board.h
+#ifndef TICTACTOE_H  // Wrong guard!
+#define TICTACTOE_H
+// ...
+#endif
+```
+
+**✅ Match filename:**
+```c
+// board.h
+#ifndef BOARD_H
+#define BOARD_H
+// ...
+#endif
+```
+
+**Why:** Duplicate guards mean the header can be included even when it shouldn't be, or excluded when it should be.
+
+---
+
+## Compiler Flags for Catching Errors
+
+**Always compile with warnings enabled:**
+
+```bash
+gcc -std=c99 -Wall -Wextra -pedantic -Werror -O2 \
+    src/*.c -Iinclude -o tictactoe
+```
+
+- `-Wall` - Enable all common warnings
+- `-Wextra` - Enable extra warnings
+- `-pedantic` - Reject non-standard features
+- `-Werror` - Treat warnings as errors (forces you to fix them)
+- `-O2` - Optimization (can reveal uninitialized variable bugs)
+
+**This project compiles cleanly with these strict flags!**
 
 ---
 
@@ -402,12 +1973,13 @@ printf("DEBUG: state = %p\n", (void*)state);  // Print pointer address
 ### 2. Use a Debugger (GDB on Linux/macOS, Visual Studio on Windows)
 ```bash
 # Compile with debug symbols
-cmake .. -DCMAKE_BUILD_TYPE=Debug
-make
+gcc -g -O0 src/*.c -Iinclude -o tictactoe
 gdb ./tictactoe
 (gdb) break main
 (gdb) run
 (gdb) print variable_name
+(gdb) next  # Step over
+(gdb) step  # Step into
 ```
 
 ### 3. Add Assertions
@@ -425,26 +1997,140 @@ void game_make_move(GameState *state, int position) {
 ```bash
 # Check for common mistakes
 cppcheck src/
+clang --analyze src/*.c -Iinclude
 ```
+
+### 5. Valgrind (Memory Errors)
+```bash
+valgrind --leak-check=full ./tictactoe
+```
+
+---
+
+## Best Practices Summary
+
+✅ **DO:**
+- Check all pointers for NULL before dereferencing
+- Validate all array indices before access
+- Check return values from functions
+- Use `const` for read-only parameters
+- Use named constants instead of magic numbers
+- Write tests for every function
+- Enable all compiler warnings
+- Initialize all variables
+- Use `(void)` for zero-parameter functions
+
+❌ **DON'T:**
+- Access arrays out of bounds
+- Use uninitialized variables
+- Ignore compiler warnings
+- Mix `=` and `==`
+- Forget `break` in `switch` statements
+- Use `()` instead of `(void)` in function declarations
+- Forget to free dynamically allocated memory (if you use `malloc`)
+- Trust user input without validation
 
 ---
 
 ## Next Steps
 
-1. **Modify the game:**
-   - Change board size to 4x4
-   - Add scoring
-   - Implement AI player
+1. **Explore the codebase:**
+   - Read `src/board.c` - Pure data structure operations
+   - Read `src/win_condition_calculator.c` - Algorithm implementation
+   - Read `src/tictactoe.c` - Module coordination
+   - Read `tests/` - See how functions are tested
 
-2. **Improve the code:**
-   - Add more comments
-   - Add input validation
-   - Add logging
+2. **Modify the game:**
+   - Change board size to 4x4 (update `BOARD_SIZE` and winning combos)
+   - Add a third player (extend `CellValue` enum)
+   - Implement a medium difficulty AI
+   - Add undo/redo functionality
 
-3. **Learn more:**
-   - Read the source files with these concepts in mind
-   - Try creating a new function (follow existing patterns)
-   - Write tests for your new function
+3. **Improve the code:**
+   - Add more edge case tests
+   - Add logging to track game events
+   - Implement save/load game state
+   - Create a CLI menu system
+
+4. **Build and test:**
+   ```bash
+   # Build the game
+   gcc -std=c99 -Wall -Wextra -pedantic -Werror -O2 \
+       src/*.c -Iinclude -o tictactoe
+   
+   # Run the game
+   ./tictactoe
+   
+   # Run tests
+   ~/.gem/ruby/2.6.0/bin/ceedling test:all
+   ```
+
+---
+
+## Project Structure Overview
+
+```
+the-dreaded-c/
+├── include/           # Header files (.h)
+│   ├── ai.h
+│   ├── ai_easy.h
+│   ├── board.h
+│   ├── constants.h
+│   ├── display.h
+│   ├── human.h
+│   ├── tictactoe.h
+│   ├── utils.h
+│   └── win_condition_calculator.h
+├── src/               # Implementation files (.c)
+│   ├── ai.c           # Hard AI (minimax algorithm)
+│   ├── ai_easy.c      # Easy AI (random moves)
+│   ├── board.c        # Board operations
+│   ├── constants.c    # Global constants
+│   ├── display.c      # UI rendering
+│   ├── human.c        # User input handling
+│   ├── main.c         # Program entry point
+│   ├── tictactoe.c    # Game coordinator
+│   ├── utils.c        # Helper utilities
+│   └── win_condition_calculator.c  # Win/draw detection
+├── tests/             # Unit tests
+│   ├── test_board.c                    
+│   ├── test_tictactoe.c                
+│   └── test_win_condition_calculator.c
+└── docs/
+    ├── LEARNING_GUIDE.md  # This file
+    └── REQUIREMENTS.md
+```
+
+---
+
+## Real Bugs We Fixed in This Project
+
+### Bug 1: Implicit Function Definition
+**Symptom:** `warning: implicit declaration of function 'NULL'`  
+**Cause:** Missing `#include <stdlib.h>` in `ai.c`  
+**Fix:** Added the include to define `NULL`
+
+### Bug 2: Empty Parameter List
+**Symptom:** `warning: a function declaration without a prototype is deprecated`  
+**Cause:** `int newline()` instead of `int newline(void)`  
+**Fix:** Changed to `int newline(void)` in both header and source
+
+### Bug 3: Missing Newline at EOF
+**Symptom:** `warning: no newline at end of file`  
+**Cause:** Files ended without a final newline character  
+**Fix:** Added newline to end of all source files
+
+### Bug 4: API Leakage
+**Symptom:** `main.c` directly manipulating `game.game_count`  
+**Cause:** Missing API function for winner symbol choice  
+**Fix:** Added `game_set_winner_symbol_choice()` function
+
+### Bug 5: Silent Fallback
+**Symptom:** AI returning center position when passed NULL  
+**Cause:** Defensive programming taken too far - hiding bugs  
+**Fix:** Replaced `if (state == NULL) return 4;` with `assert(state != NULL);`
+
+**Lesson:** Each bug taught us something about C best practices!
 
 ---
 

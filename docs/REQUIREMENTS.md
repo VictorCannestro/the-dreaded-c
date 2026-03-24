@@ -1,7 +1,7 @@
 # Requirements
 
 1. There will be two player options: one human and one computer.
-2. The only valid symbols allowed on the board are 'X', 'O', and '_'.
+2. The only valid symbols allowed on the board are 'X', 'O', and '-'.
 3. One player will be assigned X and the other, O.
 4. The human player will choose to play X or O for the first game.
 5. In each game afterwards, the most recent winner will choose to play X or O. In case of a draw, the same markers will be used.

@@ -2,7 +2,7 @@
 #define UTILS_H
 
 
-int newline();
+int newline(void);
 
 void clear_input_buffer(void);
 

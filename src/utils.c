@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 
-int newline() {
+int newline(void) {
     return printf("\n");
 }
 
@@ -13,3 +13,4 @@ void clear_input_buffer(void) {
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
 }
+

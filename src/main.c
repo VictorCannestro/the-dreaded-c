@@ -5,7 +5,6 @@
 #include "utils.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <ctype.h>
 
 
@@ -58,6 +57,27 @@ static int ask_play_again(void) {
     }
 }
 
+static Difficulty ask_difficulty(void) {
+    char choice;
+    while (1) {
+        printf("Choose difficulty - (e)asy or (h)ard: ");
+        if (scanf(" %c", &choice) != 1) {
+            clear_input_buffer();
+            continue;
+        }
+
+        choice = tolower(choice);
+        if (choice == 'e') {
+            return DIFFICULTY_EASY;
+        }
+        if (choice == 'h') {
+            return DIFFICULTY_HARD;
+        }
+        printf("Please enter e or h.\n");
+        clear_input_buffer();
+    }
+}
+
 int main(void) {
     GameState game;
 
@@ -66,6 +86,10 @@ int main(void) {
     printf("You will play against the computer.\n\n");
 
     game_init_session(&game);
+
+    Difficulty difficulty = ask_difficulty();
+    game_set_difficulty(&game, difficulty);
+    printf("Difficulty Level: %s\n\n", (difficulty == DIFFICULTY_EASY) ? "Easy" : "Hard");
 
     CellValue human_symbol = human_get_symbol_choice();
     game_set_human_symbol_choice(&game, human_symbol);
@@ -79,18 +103,12 @@ int main(void) {
         if (!ask_play_again()) {
             break;
         }
-
-        // Start new game
         if (game.last_winner != CELL_EMPTY) {
-            // Winner chooses symbol for next game
             CellValue winner_choice = human_get_winner_symbol_choice(game.last_winner);
-            // Reset game_count to allow symbol choice update
-            game.game_count = 0;
-            game_set_human_symbol_choice(&game, winner_choice);
+            game_set_winner_symbol_choice(&game, winner_choice);
             printf("Next game: You play %c, Computer plays %c\n\n",
                    (winner_choice == CELL_X) ? X_MARKER : O_MARKER,
                    (winner_choice == CELL_X) ? O_MARKER : X_MARKER);
-            game.game_count = 1;  // Restore count before game_new_game increments
         } else {
             printf("Draw! Keeping same symbols for next game.\n\n");
         }

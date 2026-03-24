@@ -181,28 +181,6 @@ ceedling release
 ```
 
 ## Development Workflow
-
-### Project Structure
-
-```
-the-dreaded-c/
-├── project.yml           # Ceedling build configuration
-├── include/              # Header files (.h)
-│   ├── tictactoe.h      # Core game logic interface
-│   └── display.h        # Display/UI interface
-├── src/                  # Implementation files (.c)
-│   ├── tictactoe.c      # Game logic implementation
-│   ├── display.c        # Display implementation
-│   └── main.c           # Interactive game program
-├── tests/                # Test files
-│   └── test_tictactoe.c # Unit tests using Unity framework
-└── docs/                 # Documentation
-    ├── README.md
-    ├── QUICK_START.md
-    ├── LEARNING_GUIDE.md
-    └── REQUIREMENTS.md
-```
-
 ### Making Changes
 
 1. **Edit source code** in the appropriate files

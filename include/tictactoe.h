@@ -1,22 +1,21 @@
 #ifndef TICTACTOE_H
 #define TICTACTOE_H
 
-#include <stdint.h>
 #include "constants.h"
 
-
 typedef struct {
-    PlayerType type;  
-    CellValue symbol;   
+    PlayerType type;
+    CellValue symbol;
 } Player;
 
 typedef struct {
-    CellValue board[9];    // 3x3 board, row-major order
+    CellValue board[9];    /* 3x3 board, row-major order          */
     GameStatus status;
     int move_count;
-    Player players[2];     // players[0] is X, players[1] is O
-    int game_count;        
-    CellValue last_winner; 
+    Player players[2];     /* players[0] is X, players[1] is O   */
+    int game_count;
+    CellValue last_winner;
+    Difficulty difficulty;
 } GameState;
 
 /*
@@ -68,6 +67,17 @@ void game_set_player_types(GameState *state, PlayerType x_player, PlayerType o_p
  * Set player symbol choice for the first game
  */
 void game_set_human_symbol_choice(GameState *state, CellValue human_symbol);
+
+/*
+ * Set the winner's symbol choice between games.
+ * Unlike game_set_human_symbol_choice, this may be called after the first game.
+ */
+void game_set_winner_symbol_choice(GameState *state, CellValue winner_symbol);
+
+/*
+ * Set the AI difficulty for the session
+ */
+void game_set_difficulty(GameState *state, Difficulty difficulty);
 
 /*
  * Get computer move (AI logic)

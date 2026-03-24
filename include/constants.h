@@ -24,4 +24,9 @@ typedef enum {
     PLAYER_COMPUTER = 1
 } PlayerType;
 
+typedef enum {
+    DIFFICULTY_EASY = 0,
+    DIFFICULTY_HARD = 1
+} Difficulty;
+
 #endif // CONSTANTS_H

@@ -1,152 +1,149 @@
 # Tic-Tac-Toe in C
-
-Tic-tac-toe with comprehensive unit testing, written in C with Ceedling build system. Features human vs computer gameplay with intelligent AI, symbol choice, and multiple game sessions - all satisfying the project requirements.
-
-## �️ Tech Stack
-
-| Component            | Technology              | Purpose                                                         |
-| -------------------- | ----------------------- | --------------------------------------------------------------- |
-| **Build System**     | Ceedling                | C project automation, compilation, and testing orchestration    |
-| **Testing Framework**| Unity                   | C Unit testing, assertions, and test runner generation          |
-| **Mocking**          | CMock                   | Automated mock generation for test isolation                    |
-| **Compiler**         | GCC/MinGW               | C compilation for Windows, Linux, and macOS                     |
-| **Language**         | C (C99 standard)        | Core implementation language                                    |
-| **Runtime**          | Ruby                    | Ceedling dependency for build automation                        |
-| **Containerization** | Docker + Docker Compose | Isolated development environment (optional)                     |
+A modular, well-tested implementation of Tic-Tac-Toe in C, designed as a teaching project for software engineering 
+principles. Features human vs computer gameplay with two difficulty levels, comprehensive unit tests, and clean 
+separation of concerns.
 
 
-## �📋 Prerequisites
+## Project Purpose
+This project demonstrates:
+- **Modular C architecture** — 10 focused source files, each < 200 lines
+- **Comprehensive testing** — 80+ unit tests with 100% pass rate
+- **Clean API design** — consistent naming, clear return values
+- **Defensive programming** — NULL checks, bounds validation, assertions
+- **Refactoring techniques** — before/after examples in the learning guide
 
-Before you begin, make sure you have:
+## 🛠️ Tech Stack
+| Component          | Technology        | Purpose                       |
+|--------------------|-------------------|-------------------------------|
+| **Language**       | C (C99)           | Core implementation           |
+| **Build System**   | Ceedling          | Test automation & compilation |
+| **Test Framework** | Unity             | Unit testing & assertions     |
+| **Compiler**       | GCC/Clang         | Cross-platform compilation    |
+| **Container**      | Docker (optional) | Isolated dev environment      |
 
-1. **Ruby** (version 2.0+)
-   - **Windows**: Download from https://rubyinstaller.org/
-   - **Linux**: Usually pre-installed or `sudo apt-get install ruby`
-   - **macOS**: Usually pre-installed or `brew install ruby`
 
-2. **Ceedling**
-   - Install with: `gem install ceedling`
-   - This will also install Unity testing framework automatically
-
-3. **C Compiler**
-   - **Windows**: Visual Studio Build Tools or MinGW
-     - Visual Studio Community: https://visualstudio.microsoft.com/vs/community/
-     - Or: `choco install mingw` (using Chocolatey)
-   - **Linux**: GCC is usually pre-installed
-   - **macOS**: Install Xcode Command Line Tools: `xcode-select --install`
-
-## 🏗️ Project Structure
-
+## Architecture
 ```
-the-dreaded-c/
-├── project.yml             # Ceedling build configuration
-├── README.md               # This file
-├── include/                # Header files (.h)
-│   ├── tictactoe.h        # Core game logic interface
-│   └── display.h          # Display/UI interface
-├── src/                    # Implementation files (.c)
-│   ├── tictactoe.c        # Game logic implementation
-│   ├── display.c          # Display implementation
-│   └── main.c             # Interactive game program
-├── tests/                  # Test files
-│   └── test_tictactoe.c   # Unit tests using Unity framework
-└── build/                  # Build output (created by Ceedling)
-    ├── artifacts/
-    ├── test/
-    │   ├── results/       # Test results and reports
-    │   └── out/          # Compiled test executables
-    └── release/          # Release build executables
-        └── tictactoe.exe # Main game executable
+┌─────────────────────────────────────────────────┐
+│  main.c  (entry point, user interaction)        │
+└─────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────┐
+│  tictactoe.c  (game session coordinator)        │
+└─────────────────────────────────────────────────┘
+         │
+    ┌────┴────┬─────────────┬─────────────┐
+    ▼         ▼             ▼             ▼
+┌────────┐ ┌────────┐ ┌──────────┐ ┌──────────┐
+│board.c │ │ ai.c   │ │ai_easy.c │ │display.c │
+│ (data) │ │ (hard) │ │ (random) │ │ (output) │
+└────────┘ └────────┘ └──────────┘ └──────────┘
+    │           │           │
+    └─────┬─────┴───────────┘
+          ▼
+┌─────────────────────────────────────────────────┐
+│  win_condition_calculator.c  (game rules)       │
+└─────────────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────────────────────────────────┐
+│  constants.h  (shared types and enums)          │
+└─────────────────────────────────────────────────┘
 ```
 
-## 🚀 Getting Started
 
-### Step 1: Clone or Download the Project
+## Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+
+## Prerequisites
+**Ruby** (for Ceedling):
 ```bash
-cd your-workspace-folder
-# Project should be in: the-dreaded-c/
+# macOS
+brew install ruby
+
+# Linux
+sudo apt-get install ruby
+
+# Windows
+# Download from https://rubyinstaller.org/
 ```
 
-### Step 2: Build and Test the Project
-
+**Ceedling** (test framework):
 ```bash
+gem install ceedling
+```
+
+**C Compiler**:
+```bash
+# macOS
+xcode-select --install
+
+# Linux
+sudo apt-get install gcc
+
+# Windows
+# Install MinGW or Visual Studio Build Tools
+```
+
+## Quick Start
+```bash
+# Clone the project
+git clone <repository-url>
 cd the-dreaded-c
 
-# Run all tests (recommended first)
+# Run all tests (84 tests)
 ceedling test:all
 
-# Build the game executable
+# Build the game
 ceedling release
 
-# Or run both automatically (default tasks)
-ceedling
+# Play!
+./build/release/tictactoe.exe   # Linux/macOS
+.\build\release\tictactoe.exe   # Windows
 ```
 
-**Note:** Ceedling will automatically download and configure the Unity test framework.
 
-### Step 3: Run the Game
+## How to Play
+1. **Choose difficulty**: Easy (random AI) or Hard (unbeatable minimax AI)
+2. **Choose your symbol**: X or O (X always moves first)
+3. **Enter moves**: Type position 0-8 when prompted
 
-```bash
-# Linux/macOS (in Docker container)
-./build/release/tictactoe.exe
-
-# Windows (native)
-.\build\release\tictactoe.exe
+```
+Board positions:
+   0 | 1 | 2
+  -----------
+   3 | 4 | 5
+  -----------
+   6 | 7 | 8
 ```
 
-### Step 4: View Test Results
+4. **Win conditions**: 3 in a row (horizontal, vertical, or diagonal)
+5. **After each game**: Winner chooses symbols for the next game
 
-```bash
-# Run tests and see results
-ceedling test:all
 
-# Test results are saved in build/test/results/
-# Open build/test/results/test_tictactoe.xml for detailed results
-```
+## Learning Resources
+This project includes comprehensive documentation for learning C and software engineering:
 
-## 📝 How to Play
+### [Learning Guide](docs/LEARNING_GUIDE.md)
+**Core C Concepts** — Types, enums, structs, arrays, pointers, functions, headers, memory
 
-1. **Choose Your Symbol**: For the first game, choose to play as X or O
-2. **Gameplay**: The game features human vs computer with intelligent AI
-3. **Board Layout**: 3x3 grid with positions numbered 0-8:
-   ```
-      0 | 1 | 2
-     -----------
-      3 | 4 | 5
-     -----------
-      6 | 7 | 8
-   ```
-4. **Rules**:
-   - X always makes the first move
-   - Players alternate turns
-   - Place your symbol in any empty position
-   - First to get 3 in a row (horizontal, vertical, or diagonal) wins
-   - If board fills with no winner, it's a draw
-5. **Multiple Games**: Winner of each game chooses symbols for the next game
-6. **AI Opponent**: Computer uses minimax algorithm for perfect play
+**Software Engineering Practices:**
+- Separation of concerns
+- API design principles
+- Defensive programming
+- Unit testing strategies
+- Code smells & refactoring
 
-### 🎯 **Game Flow:**
-- First game: Human chooses X or O
-- Subsequent games: Previous winner chooses symbols
-- Draw games: Keep same symbol assignments
+**15 Common C Pitfalls** — With examples and fixes:
+- Missing includes for NULL
+- `()` vs `(void)` in function declarations
+- Array bounds errors
+- Uninitialized pointers
+- And 11 more...
 
-## 🧪 Understanding the Tests
 
-The project includes 22 comprehensive unit tests covering:
+### [Requirements](docs/REQUIREMENTS.md)
+Full specification of game features and behavior.
 
-- **Session Management**: Game session initialization and symbol choice
-- **Player Types**: Human vs computer player management
-- **AI Logic**: Computer move validation and strategic play
-- **Game Flow**: Multiple game sessions with winner choice logic
-- **Board Display**: Correct symbol rendering ('_', 'X', 'O')
-- **Win Conditions**: All winning combinations and draw detection
-- **Move Validation**: Position bounds and occupancy checking
-- **Edge Cases**: Null pointers, invalid inputs, game state transitions
-
-To view test results:
-```bash
-ceedling test:all
-```
-
-Test results show detailed Unity framework output with pass/fail status.

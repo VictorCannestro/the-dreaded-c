@@ -4,8 +4,6 @@
 #include "tictactoe.h"
 
 
-int newline();
-
 void display_board(const GameState *state);
 
 char cell_value_to_marker(const GameState *state, int pos);

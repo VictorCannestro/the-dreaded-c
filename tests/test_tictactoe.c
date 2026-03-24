@@ -245,22 +245,6 @@ void test_game_draw(void) {
 }
 
 
-// ===== Reset Tests =====
-void test_game_reset(void) {
-    GameState game;
-    game_init_session(&game);
-
-    game_make_move(&game, 0);
-    game_make_move(&game, 1);
-    game_reset(&game);
-
-    TEST_ASSERT_EQUAL(ONGOING, game.status);
-    TEST_ASSERT_EQUAL(0, game.move_count);
-    TEST_ASSERT_EQUAL(CELL_EMPTY, game.board[0]);
-    TEST_ASSERT_EQUAL(CELL_EMPTY, game.board[1]);
-}
-
-
 // ===== Computer AI Tests =====
 void test_computer_move_returns_valid_position(void) {
     GameState game;

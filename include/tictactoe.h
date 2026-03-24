@@ -2,42 +2,21 @@
 #define TICTACTOE_H
 
 #include <stdint.h>
+#include "constants.h"
 
-/*
- * Tic-Tac-Toe Game Engine
- * A simple library to manage tic-tac-toe game logic with human vs computer support
- */
-
-typedef enum {
-    CELL_EMPTY = 0,
-    CELL_X = 1,
-    CELL_O = 2
-} CellValue;
-
-typedef enum {
-    ONGOING = 0,
-    X_WINS = 1,
-    O_WINS = 2,
-    DRAW = 3
-} GameStatus;
-
-typedef enum {
-    PLAYER_HUMAN = 0,
-    PLAYER_COMPUTER = 1
-} PlayerType;
 
 typedef struct {
-    PlayerType type;  // Human or computer
-    CellValue symbol; // X or O
+    PlayerType type;  
+    CellValue symbol;   
 } Player;
 
 typedef struct {
-    CellValue board[9];  // 3x3 board, row-major order
+    CellValue board[9];    // 3x3 board, row-major order
     GameStatus status;
     int move_count;
-    Player players[2];   // players[0] is X, players[1] is O
-    int game_count;      // Track number of games played
-    CellValue last_winner; // Winner of the last game (for marker choice)
+    Player players[2];     // players[0] is X, players[1] is O
+    int game_count;        
+    CellValue last_winner; 
 } GameState;
 
 /*
@@ -51,11 +30,6 @@ void game_init_session(GameState *state);
  * Resets board but keeps player assignments
  */
 void game_new_game(GameState *state);
-
-/*
- * Initialize a new game (legacy function for backward compatibility)
- */
-void game_init(GameState *state);
 
 /*
  * Make a move on the board
@@ -105,10 +79,5 @@ int game_get_computer_move(GameState *state);
  * Check if game is over
  */
 int game_is_over(GameState *state);
-
-/*
- * Reset the game to initial state (legacy function)
- */
-void game_reset(GameState *state);
 
 #endif // TICTACTOE_H

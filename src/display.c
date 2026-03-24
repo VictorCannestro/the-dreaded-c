@@ -1,10 +1,7 @@
 #include "display.h"
+#include "utils.h"
 #include <stdio.h>
 
-
-int newline() {
-    return printf("\n");
-}
 
 void display_board(const GameState *state) {
     if (state == NULL) {
@@ -25,13 +22,13 @@ char cell_value_to_marker(const GameState *state, int pos) {
     CellValue cell = state->board[pos];
     switch (cell) {
         case CELL_EMPTY:
-            return '-';
+            return EMPTY_MARKER;
         case CELL_X:
-            return 'X';
+            return X_MARKER;
         case CELL_O:
-            return 'O';
+            return O_MARKER;
         default:
-            return '-';
+            return EMPTY_MARKER;
     }
 }
 

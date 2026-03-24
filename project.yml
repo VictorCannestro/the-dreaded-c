@@ -23,39 +23,19 @@
 :release_build:
   :output: tictactoe.exe
 
-:tools:
-  :test_compiler:
-    :executable: gcc
-    :arguments:
+:flags:
+  :test:
+    :compilie:
+      :*:
+        - -std=c99
+        - -Wall
+        - -Wextra
+  :release:
+    :compile:
       - -std=c99
-      - -Iinclude
-      - -Ibuild/test/vendor/src
-      - -DTEST
-      - -c ${1}
-      - -o ${2}
-  :release_compiler:
-    :executable: gcc
-    :arguments:
-      - -std=c99
-      - -Iinclude
-      - -c ${1}
-      - -o ${2}
-  :test_linker:
-    :executable: gcc
-    :arguments:
-      - -std=c99
-      - -Werror
+      - -Wall
       - -Wextra
-      - -pedantic
       - -O2
-      - ${1}
-      - -o ${2}
-  :release_linker:
-    :executable: gcc
-    :arguments:
-      - -std=c99
-      - ${1}
-      - -o ${2}
 
 :plugins:
   :enabled:

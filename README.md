@@ -1,18 +1,28 @@
-# Tic-Tac-Toe in C
-A modular, well-tested implementation of Tic-Tac-Toe in C, designed as a teaching project for software engineering 
-principles. Features human vs computer gameplay with two difficulty levels, comprehensive unit tests, and clean 
-separation of concerns.
+```
+▄▄▄█████▓ ██▓ ▄████▄  ▄▄▄█████▓ ▄▄▄       ▄████▄  ▄▄▄█████▓ ▒█████  ▓█████ 
+▓  ██▒ ▓▒▓██▒▒██▀ ▀█  ▓  ██▒ ▓▒▒████▄    ▒██▀ ▀█  ▓  ██▒ ▓▒▒██▒  ██▒▓█   ▀ 
+▒ ▓██░ ▒░▒██▒▒▓█    ▄ ▒ ▓██░ ▒░▒██  ▀█▄  ▒▓█    ▄ ▒ ▓██░ ▒░▒██░  ██▒▒███   
+░ ▓██▓ ░ ░██░▒▓▓▄ ▄██▒░ ▓██▓ ░ ░██▄▄▄▄██ ▒▓▓▄ ▄██▒░ ▓██▓ ░ ▒██   ██░▒▓█  ▄ 
+  ▒██▒ ░ ░██░▒ ▓███▀ ░  ▒██▒ ░  ▓█   ▓██▒▒ ▓███▀ ░  ▒██▒ ░ ░ ████▓▒░░▒████▒
+  ▒ ░░   ░▓  ░ ░▒ ▒  ░  ▒ ░░    ▒▒   ▓▒█░░ ░▒ ▒  ░  ▒ ░░   ░ ▒░▒░▒░ ░░ ▒░ ░
+    ░     ▒ ░  ░  ▒       ░      ▒   ▒▒ ░  ░  ▒       ░      ░ ▒ ▒░  ░ ░  ░
+  ░       ▒ ░░          ░        ░   ▒   ░          ░      ░ ░ ░ ▒     ░   
+          ░  ░ ░                     ░  ░░ ░                   ░ ░     ░  ░
+             ░                           ░                                     
+```
+
+A modular, well-tested implementation of Tic-Tac-Toe in C, designed as a teaching project for software engineering principles. Features human vs computer gameplay with two difficulty levels, comprehensive unit tests, and clean separation of concerns.
 
 
 ## Project Purpose
 This project demonstrates:
-- **Modular C architecture** — 10 focused source files, each < 200 lines
-- **Comprehensive testing** — 80+ unit tests with 100% pass rate
-- **Clean API design** — consistent naming, clear return values
+- **Modular C architecture** — Single responsibility focused source files
+- **Comprehensive testing** — Unit tests with 100% pass rate
+- **Clean API design** — Consistent naming, clear return values
 - **Defensive programming** — NULL checks, bounds validation, assertions
-- **Refactoring techniques** — before/after examples in the learning guide
+- **Refactoring techniques** — Before/after examples in the learning guide
 
-## 🛠️ Tech Stack
+## Tech Stack
 | Component          | Technology        | Purpose                       |
 |--------------------|-------------------|-------------------------------|
 | **Language**       | C (C99)           | Core implementation           |
@@ -114,11 +124,15 @@ code or improvements.
 
 ```
 Board positions:
-   0 | 1 | 2
-  -----------
-   3 | 4 | 5
-  -----------
-   6 | 7 | 8
+   |   |   
+ 0 | 1 | 2 
+___|___|___
+   |   |   
+ 3 | 4 | 5 
+___|___|___
+   |   |   
+ 6 | 7 | 8 
+   |   |    
 ```
 
 4. **Win conditions**: 3 in a row (horizontal, vertical, or diagonal)

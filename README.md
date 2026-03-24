@@ -22,39 +22,36 @@ This project demonstrates:
 | **Container**      | Docker (optional) | Isolated dev environment      |
 
 
-## Architecture
-```
-┌─────────────────────────────────────────────────┐
-│  main.c  (entry point, user interaction)        │
-└─────────────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────────────────┐
-│  tictactoe.c  (game session coordinator)        │
-└─────────────────────────────────────────────────┘
-         │
-    ┌────┴────┬─────────────┬─────────────┐
-    ▼         ▼             ▼             ▼
-┌────────┐ ┌────────┐ ┌──────────┐ ┌──────────┐
-│board.c │ │ ai.c   │ │ai_easy.c │ │display.c │
-│ (data) │ │ (hard) │ │ (random) │ │ (output) │
-└────────┘ └────────┘ └──────────┘ └──────────┘
-    │           │           │
-    └─────┬─────┴───────────┘
-          ▼
-┌─────────────────────────────────────────────────┐
-│  win_condition_calculator.c  (game rules)       │
-└─────────────────────────────────────────────────┘
-          │
-          ▼
-┌─────────────────────────────────────────────────┐
-│  constants.h  (shared types and enums)          │
-└─────────────────────────────────────────────────┘
-```
+## Learning Resources
+### [Skill Levels](skill_levels/README.md)
+Organized into three progressive levels of complexity. Each level is a complete, buildable version of the game, designed
+to illustrate specific concepts and common pitfalls.
+
+**Progressive learning levels**:
+- **Level 1**: Single file, globals, magic numbers (common beginner mistakes)
+- **Level 2**: Separate files, enums, structs (better organization)
+- **Level 3**: This version (tests, minimax AI, full features)
+
+### [Learning Guide](docs/LEARNING_GUIDE.md)
+**Core C Concepts** — Types, enums, structs, arrays, pointers, functions, headers, memory
+
+**Software Engineering Practices:**
+- Separation of concerns
+- API design principles
+- Defensive programming
+- Unit testing strategies
+- Code smells & refactoring
+
+**15 Common C Pitfalls** — With examples and fixes:
+- Missing includes for NULL
+- `()` vs `(void)` in function declarations
+- Array bounds errors
+- Uninitialized pointers
+- And 11 more...
 
 
-## Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+### [Requirements](docs/REQUIREMENTS.md)
+Full specification of game features and behavior.
 
 
 ## Prerequisites
@@ -105,6 +102,11 @@ ceedling release
 ```
 
 
+## Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on how to build and test the project, as well as guidelines for contributing
+code or improvements.
+
+
 ## How to Play
 1. **Choose difficulty**: Easy (random AI) or Hard (unbeatable minimax AI)
 2. **Choose your symbol**: X or O (X always moves first)
@@ -123,27 +125,32 @@ Board positions:
 5. **After each game**: Winner chooses symbols for the next game
 
 
-## Learning Resources
-This project includes comprehensive documentation for learning C and software engineering:
-
-### [Learning Guide](docs/LEARNING_GUIDE.md)
-**Core C Concepts** — Types, enums, structs, arrays, pointers, functions, headers, memory
-
-**Software Engineering Practices:**
-- Separation of concerns
-- API design principles
-- Defensive programming
-- Unit testing strategies
-- Code smells & refactoring
-
-**15 Common C Pitfalls** — With examples and fixes:
-- Missing includes for NULL
-- `()` vs `(void)` in function declarations
-- Array bounds errors
-- Uninitialized pointers
-- And 11 more...
-
-
-### [Requirements](docs/REQUIREMENTS.md)
-Full specification of game features and behavior.
-
+## Architecture
+```
+┌─────────────────────────────────────────────────┐
+│  main.c  (entry point, user interaction)        │
+└─────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────┐
+│  tictactoe.c  (game session coordinator)        │
+└─────────────────────────────────────────────────┘
+         │
+    ┌────┴────┬─────────────┬─────────────┐
+    ▼         ▼             ▼             ▼
+┌────────┐ ┌────────┐ ┌──────────┐ ┌──────────┐
+│board.c │ │ ai.c   │ │ai_easy.c │ │display.c │
+│ (data) │ │ (hard) │ │ (random) │ │ (output) │
+└────────┘ └────────┘ └──────────┘ └──────────┘
+    │           │           │
+    └─────┬─────┴───────────┘
+          ▼
+┌─────────────────────────────────────────────────┐
+│  win_condition_calculator.c  (game rules)       │
+└─────────────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────────────────────────────────┐
+│  constants.h  (shared types and enums)          │
+└─────────────────────────────────────────────────┘
+```

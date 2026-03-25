@@ -217,7 +217,7 @@ void test_game_is_valid_move_false_out_of_range(void) {
     game_init_session(&game);
 
     TEST_ASSERT_EQUAL(0, game_is_valid_move(&game, -1));
-    TEST_ASSERT_EQUAL(0, game_is_valid_move(&game, 9));
+    TEST_ASSERT_EQUAL(0, game_is_valid_move(&game, BOARD_SIZE));
     TEST_ASSERT_EQUAL(0, game_is_valid_move(&game, 100));
 }
 

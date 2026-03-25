@@ -82,7 +82,7 @@ void test_board_place_does_not_modify_board_on_failure(void) {
     CellValue board[BOARD_SIZE];
     board_init(board);
 
-    board_place(board, 9, CELL_X); /* out of range — board must be untouched */
+    board_place(board, 9, CELL_X); /* out of range -- board must be untouched */
 
     for (int i = 0; i < BOARD_SIZE; i++) {
         TEST_ASSERT_EQUAL(CELL_EMPTY, board[i]);

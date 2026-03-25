@@ -9,10 +9,10 @@ typedef struct {
 } Player;
 
 typedef struct {
-    CellValue board[9];    /* 3x3 board, row-major order          */
+    CellValue board[BOARD_SIZE];    /* NxN board, row-major order */
     GameStatus status;
     int move_count;
-    Player players[2];     /* players[0] is X, players[1] is O   */
+    Player players[2];     /* players[0] is X, players[1] is O */
     int game_count;
     CellValue last_winner;
     Difficulty difficulty;

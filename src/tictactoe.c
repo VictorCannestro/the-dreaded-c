@@ -27,10 +27,10 @@ static void update_status(GameState *state) {
     }
 }
 
+
 /* ------------------------------------------------------------------ */
 /* Public API                                                           */
 /* ------------------------------------------------------------------ */
-
 void game_init_session(GameState *state) {
     if (state == NULL) {
         return;

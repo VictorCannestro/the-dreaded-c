@@ -12,17 +12,18 @@ This guide explains the key C concepts and software engineering practices used i
 5. [Pointers](#pointers)
 6. [Functions](#functions)
 7. [Header Files](#header-files)
-8. [Memory Management](#memory-management)
+8. [Function Pointers and Abstraction](#function-pointers-and-abstraction)
+9. [Memory Management](#memory-management)
 
 ### Software Engineering Practices
-9. [Separation of Concerns](#separation-of-concerns)
-10. [API Design](#api-design)
-11. [Defensive Programming](#defensive-programming)
-12. [Testing](#testing)
-13. [Code Smells and Refactoring](#code-smells-and-refactoring)
+10. [Separation of Concerns](#separation-of-concerns)
+11. [API Design](#api-design)
+12. [Defensive Programming](#defensive-programming)
+13. [Testing](#testing)
+14. [Code Smells and Refactoring](#code-smells-and-refactoring)
 
 ### Common Pitfalls
-14. [C Pitfalls and How to Avoid Them](#c-pitfalls-and-how-to-avoid-them)
+15. [C Pitfalls and How to Avoid Them](#c-pitfalls-and-how-to-avoid-them)
 
 ---
 
@@ -176,13 +177,13 @@ typedef struct {
 **GameState** - Everything about the current game:
 ```c
 typedef struct {
-    CellValue board[9];    // The 3x3 board (9 cells)
-    GameStatus status;     // ONGOING, X_WINS, O_WINS, or DRAW
-    int move_count;        // How many moves made (0-9)
-    Player players[2];     // players[0]=X, players[1]=O
-    int game_count;        // Which game number in session
-    CellValue last_winner; // Who won the previous game
-    Difficulty difficulty; // DIFFICULTY_EASY or DIFFICULTY_HARD
+    CellValue board[BOARD_SIZE]; // The NxN board (configurable size)
+    GameStatus status;           // ONGOING, X_WINS, O_WINS, or DRAW
+    int move_count;              // How many moves made
+    Player players[2];           // players[0]=X, players[1]=O
+    int game_count;              // Which game number in session
+    CellValue last_winner;       // Who won the previous game
+    Difficulty difficulty;       // DIFFICULTY_EASY or DIFFICULTY_HARD
 } GameState;
 ```
 
@@ -255,12 +256,18 @@ Values:    10   20   30   40   50
 
 ### The Board: 1D Array as 2D Grid
 
-Our tic-tac-toe board uses a **linear array** to represent a 3×3 grid:
+Our tic-tac-toe board uses a **linear array** to represent a grid:
 
 ```c
-CellValue board[9];  // 9 cells
+// constants.h - Configurable board size
+#define BOARD_DIM 3                         // Change to 4, 5, etc.
+#define BOARD_SIZE (BOARD_DIM * BOARD_DIM)  // 9 for 3x3, 16 for 4x4
+#define WIN_LENGTH BOARD_DIM                // Symbols needed to win
 
-// Visual mapping:
+// tictactoe.h
+CellValue board[BOARD_SIZE];  // Uses the constant
+
+// Visual mapping for 3x3:
 //   board[0] | board[1] | board[2]
 //   ---------+----------+---------
 //   board[3] | board[4] | board[5]
@@ -270,13 +277,15 @@ CellValue board[9];  // 9 cells
 
 **Converting row/column to index:**
 ```c
-int position = row * 3 + col;
+int position = row * BOARD_DIM + col;
 
-// Examples:
+// Examples (3x3 board):
 // (0,0) → 0*3+0 = 0  (top-left)
 // (1,1) → 1*3+1 = 4  (center)
 // (2,2) → 2*3+2 = 8  (bottom-right)
 ```
+
+**Why configurable?** Change `BOARD_DIM` to 4 and rebuild — the entire game adapts to a 4x4 board!
 
 ### Arrays and Pointers
 
@@ -699,150 +708,657 @@ See [include/](include/) for all header files.
 
 ---
 
+## Function Pointers and Abstraction
+Function pointers allow you to store and call functions dynamically. This enables powerful patterns like callbacks, plugin systems, and **interface abstraction**.
+
+### Basic Function Pointer Syntax
+```c
+// A regular function
+int add(int a, int b) {
+    return a + b;
+}
+
+// A function pointer variable
+int (*operation)(int, int);  // Points to a function taking 2 ints, returning int
+
+// Assign and call
+operation = add;             // Point to the add function
+int result = operation(3, 4); // Call through pointer: result = 7
+```
+
+### Why Function Pointers Matter
+
+They let you **swap behavior without changing code**. This is crucial for:
+- Swapping CLI for GUI
+- Testing with mock functions
+- Plugin architectures
+- Strategy patterns
+
+### The UserInterface Pattern in This Project
+
+We use function pointers to abstract the UI layer:
+
+**Step 1: Define the interface (what functions must exist)**
+```c
+// ui_interface.h
+typedef struct UserInterface {
+    void (*display_board)(const GameState *state);
+    void (*display_status)(GameStatus status);
+    void (*display_message)(const char *message);
+    int  (*get_move)(GameState *game);
+    int  (*get_yes_no)(const char *prompt);
+    CellValue (*get_symbol_choice)(const char *prompt);
+    Difficulty (*get_difficulty)(void);
+} UserInterface;
+
+// Factory function declaration
+UserInterface *ui_get_cli_interface(void);
+```
+
+**Step 2: Implement the interface (CLI version)**
+```c
+// ui_cli.c
+static void cli_display_board(const GameState *state) {
+    // printf the board to terminal...
+}
+
+static int cli_get_move(GameState *game) {
+    // scanf from user...
+}
+
+// Create the interface struct with function pointers
+static UserInterface cli_interface = {
+    .display_board = cli_display_board,
+    .display_status = cli_display_status,
+    .display_message = cli_display_message,
+    .get_move = cli_get_move,
+    .get_yes_no = cli_get_yes_no,
+    .get_symbol_choice = cli_get_symbol_choice,
+    .get_difficulty = cli_get_difficulty,
+};
+
+UserInterface *ui_get_cli_interface(void) {
+    return &cli_interface;
+}
+```
+
+**Step 3: Use the interface (game logic doesn't know about CLI)**
+```c
+// main.c
+int main(void) {
+    GameState game;
+    UserInterface *ui = ui_get_cli_interface();  // Could be GUI!
+    
+    ui->display_message("Welcome to Tic-Tac-Toe!");
+    
+    while (!game_is_over(&game)) {
+        ui->display_board(&game);
+        int move = ui->get_move(&game);  // Works for CLI or GUI
+        game_make_move(&game, move);
+    }
+    
+    ui->display_status(game.status);
+    return 0;
+}
+```
+
+### Adding a GUI Implementation
+To add a GUI, you just implement the same interface:
+
+```c
+// ui_gui.c (example with SDL2)
+static void gui_display_board(const GameState *state) {
+    // SDL_RenderDrawLine, SDL_RenderCopy, etc.
+}
+
+static int gui_get_move(GameState *game) {
+    // SDL_PollEvent for mouse clicks
+}
+
+static UserInterface gui_interface = {
+    .display_board = gui_display_board,
+    .get_move = gui_get_move,
+    // ... same fields, different implementations
+};
+
+UserInterface *ui_get_gui_interface(void) {
+    return &gui_interface;
+}
+```
+
+**To switch from CLI to GUI:** Change ONE line in main.c:
+```c
+// UserInterface *ui = ui_get_cli_interface();
+UserInterface *ui = ui_get_gui_interface();  // That's it!
+```
+
+### Benefits of This Pattern
+
+| Without Abstraction              | With UserInterface                      |
+|----------------------------------|-----------------------------------------|
+| `printf` scattered throughout    | All I/O in one place                    |
+| Changing UI = rewrite game logic | Changing UI = new implementation file   |
+| Can't test without terminal      | Can mock the interface for tests        |
+| Hard to add web/mobile UI        | Each platform implements same interface |
+
+### Algorithm Deep Dive: `cli_display_board`
+
+For a detailed breakdown of how `cli_display_board` renders the game board dynamically for any board size, see:
+
+📄 **[CLI Display Board Algorithm](algorithms/CLI_DISPLAY_BOARD.md)**
+
+Topics covered:
+- Visual output examples (3x3 and 4x4 boards)
+- Step-by-step code breakdown
+- 2D to 1D index conversion formula
+- Key design decisions and rationale
+- Complexity analysis
+- Extension ideas (colors, Unicode, labels)
+
+See [include/ui_interface.h](include/ui_interface.h) and [src/ui_cli.c](src/ui_cli.c).
+
+---
+
 ## Memory Management
 
-Understanding where variables live in memory is crucial in C.
+Memory management is one of the most critical topics in C programming. Unlike languages with garbage collection (Java, Python, Go), C requires you to **manually manage memory**. This gives you power and performance, but also responsibility.
 
-### Stack Memory (Automatic)
+### The Memory Layout of a C Program
 
-Variables declared inside functions live on the **stack**:
+When your program runs, memory is divided into distinct regions:
+
+```
+┌─────────────────────────────────┐  High addresses
+│           Stack                 │  ← Local variables, function calls
+│             ↓                   │    (grows downward)
+│                                 │
+│          (free)                 │
+│                                 │
+│             ↑                   │
+│           Heap                  │  ← malloc/calloc/realloc
+├─────────────────────────────────┤
+│     Uninitialized Data (BSS)    │  ← Global/static vars (zeroed)
+├─────────────────────────────────┤
+│     Initialized Data            │  ← Global/static vars with values
+├─────────────────────────────────┤
+│           Text                  │  ← Your compiled code
+└─────────────────────────────────┘  Low addresses
+```
+
+### Stack Memory (Automatic Storage)
+
+Variables declared inside functions live on the **stack**. The stack is managed automatically—memory is allocated when you enter a function and freed when you leave.
 
 ```c
 void play_game(void) {
-    GameState game;        // Created on stack
+    GameState game;        // Allocated on stack when function enters
+    int scores[100];       // Also on stack (400 bytes)
+    
     game_init_session(&game);
-    // ... use game ...
-}   // game is automatically destroyed here
+    // ... use game and scores ...
+    
+}   // Both 'game' and 'scores' are automatically destroyed here
 ```
 
-**Characteristics:**
-- ✅ Fast allocation/deallocation
-- ✅ Automatic cleanup when function returns
-- ❌ Limited size (~1-8 MB typically)
-- ❌ Cannot outlive the function
+**How the Stack Works:**
 
-### Heap Memory (Manual)
+```
+Before play_game():        During play_game():         After play_game():
+┌─────────────┐            ┌─────────────┐            ┌─────────────┐
+│   main()    │            │   main()    │            │   main()    │
+│   frame     │            │   frame     │            │   frame     │
+├─────────────┤            ├─────────────┤            └─────────────┘
+│             │            │ play_game() │                  ↑
+│             │            │   frame     │            Stack pointer
+│             │            │ ┌─────────┐ │            returned here
+│             │            │ │  game   │ │
+│             │            │ │scores[100]│
+│             │            │ └─────────┘ │
+└─────────────┘            └─────────────┘
+```
 
-For larger or longer-lived data, use the **heap**:
+**Characteristics of Stack Memory:**
+
+| Aspect | Description |
+|--------|-------------|
+| **Speed** | Very fast (just move stack pointer) |
+| **Allocation** | Automatic when function enters |
+| **Deallocation** | Automatic when function returns |
+| **Size limit** | Typically 1-8 MB (OS-dependent) |
+| **Lifetime** | Limited to function scope |
+| **Thread safety** | Each thread has its own stack |
+
+**Stack Overflow:**
+
+The stack has a fixed size. If you allocate too much, you get a **stack overflow**:
+
+```c
+void cause_overflow(void) {
+    int huge_array[10000000];  // 40 MB! Stack overflow!
+}
+
+// Or through infinite recursion:
+void infinite(void) {
+    infinite();  // Each call adds a stack frame → overflow
+}
+```
+
+### Heap Memory (Dynamic Storage)
+
+For larger or longer-lived data, use the **heap** via `malloc()`, `calloc()`, `realloc()`, and `free()`:
 
 ```c
 #include <stdlib.h>
 
-GameState *game = malloc(sizeof(GameState));  // Allocate
+// Allocate memory for one GameState
+GameState *game = malloc(sizeof(GameState));
+
+// Always check if allocation succeeded
 if (game == NULL) {
-    // Handle allocation failure!
+    fprintf(stderr, "Error: Out of memory!\n");
+    exit(1);
 }
+
+// Use the memory
 game_init_session(game);
-// ... use game ...
-free(game);              // MUST free manually!
-game = NULL;             // Good practice: prevent dangling pointer
+
+// When done, free the memory
+free(game);
+game = NULL;  // Prevent dangling pointer
 ```
 
-**Characteristics:**
-- ✅ Large size (gigabytes available)
-- ✅ Lives until explicitly freed
-- ❌ Slower than stack
-- ❌ Must manually free (memory leak if forgotten!)
-- ❌ Must check for allocation failure
+**Characteristics of Heap Memory:**
 
-### This Project Uses Stack Only
+| Aspect | Description |
+|--------|-------------|
+| **Speed** | Slower than stack (bookkeeping overhead) |
+| **Allocation** | Manual via malloc/calloc/realloc |
+| **Deallocation** | Manual via free |
+| **Size limit** | Limited by available RAM (gigabytes) |
+| **Lifetime** | Until explicitly freed |
+| **Thread safety** | Shared between threads (needs synchronization) |
 
-For simplicity, we allocate `GameState` on the stack:
+### The malloc Family
+
+**`malloc(size)`** - Allocate uninitialized memory:
+```c
+// Allocate 100 integers (uninitialized - contains garbage!)
+int *arr = malloc(100 * sizeof(int));
+```
+
+**`calloc(count, size)`** - Allocate and zero-initialize:
+```c
+// Allocate 100 integers (all initialized to 0)
+int *arr = calloc(100, sizeof(int));
+```
+
+**`realloc(ptr, new_size)`** - Resize existing allocation:
+```c
+// Grow array from 100 to 200 integers
+arr = realloc(arr, 200 * sizeof(int));
+// Note: realloc may move the data to a new location!
+```
+
+**`free(ptr)`** - Release memory back to the system:
+```c
+free(arr);
+arr = NULL;  // Good practice
+```
+
+### Allocation Patterns
+
+**Pattern 1: Single Object**
+```c
+GameState *game = malloc(sizeof(GameState));
+if (game == NULL) { /* handle error */ }
+// ... use game->board, game->status, etc.
+free(game);
+```
+
+**Pattern 2: Array of Objects**
+```c
+// Allocate array of 10 games
+GameState *games = malloc(10 * sizeof(GameState));
+if (games == NULL) { /* handle error */ }
+
+// Access as array
+games[0].status = ONGOING;
+games[5].move_count = 3;
+
+free(games);  // Frees entire array
+```
+
+**Pattern 3: Array of Pointers**
+```c
+// Allocate array of 10 pointers
+GameState **games = malloc(10 * sizeof(GameState *));
+if (games == NULL) { /* handle error */ }
+
+// Allocate each game individually
+for (int i = 0; i < 10; i++) {
+    games[i] = malloc(sizeof(GameState));
+    if (games[i] == NULL) { /* handle error */ }
+}
+
+// Free in reverse order
+for (int i = 0; i < 10; i++) {
+    free(games[i]);
+}
+free(games);
+```
+
+**Pattern 4: 2D Array (Contiguous)**
+```c
+// Allocate 3x3 board as contiguous memory
+int *board = malloc(3 * 3 * sizeof(int));
+// Access: board[row * 3 + col]
+board[1 * 3 + 2] = 5;  // Row 1, Col 2
+free(board);
+```
+
+**Pattern 5: 2D Array (Array of Rows)**
+```c
+// Allocate array of row pointers
+int **board = malloc(3 * sizeof(int *));
+for (int i = 0; i < 3; i++) {
+    board[i] = malloc(3 * sizeof(int));
+}
+// Access: board[row][col]
+board[1][2] = 5;
+
+// Free each row, then the array
+for (int i = 0; i < 3; i++) {
+    free(board[i]);
+}
+free(board);
+```
+
+### Memory Errors: The Deadly Sins
+
+#### 1. Uninitialized Pointer
+```c
+int *ptr;           // ❌ Contains garbage address!
+*ptr = 5;           // ❌ Writing to random memory → crash or corruption
+
+// ✅ Fix: Initialize to NULL or valid address
+int *ptr = NULL;
+// or
+int value = 42;
+int *ptr = &value;
+```
+
+#### 2. Null Pointer Dereference
+```c
+int *ptr = malloc(sizeof(int));
+// What if malloc fails?
+*ptr = 5;           // ❌ If ptr is NULL, this crashes!
+
+// ✅ Fix: Always check malloc result
+int *ptr = malloc(sizeof(int));
+if (ptr == NULL) {
+    fprintf(stderr, "Out of memory\n");
+    exit(1);
+}
+*ptr = 5;           // ✅ Safe
+```
+
+#### 3. Memory Leak
+```c
+void create_leak(void) {
+    int *ptr = malloc(sizeof(int));
+    *ptr = 42;
+    return;         // ❌ ptr goes out of scope, memory never freed!
+}
+
+// Call this 1000 times → 4000 bytes leaked
+
+// ✅ Fix: Free before returning
+void no_leak(void) {
+    int *ptr = malloc(sizeof(int));
+    *ptr = 42;
+    // ... use ptr ...
+    free(ptr);      // ✅ Clean up
+    return;
+}
+```
+
+#### 4. Use After Free (Dangling Pointer)
+```c
+int *ptr = malloc(sizeof(int));
+*ptr = 42;
+free(ptr);
+// ptr still contains the old address!
+printf("%d\n", *ptr);  // ❌ Undefined behavior! May print 42, 0, or crash
+
+// ✅ Fix: Set to NULL after free
+free(ptr);
+ptr = NULL;
+// Now any accidental use will reliably crash (easier to debug)
+```
+
+#### 5. Double Free
+```c
+int *ptr = malloc(sizeof(int));
+free(ptr);
+free(ptr);          // ❌ Crash! Memory already freed
+
+// ✅ Fix: Set to NULL after free
+free(ptr);
+ptr = NULL;
+free(ptr);          // ✅ free(NULL) is safe (does nothing)
+```
+
+#### 6. Buffer Overflow (Heap)
+```c
+int *arr = malloc(5 * sizeof(int));  // Space for 5 ints
+arr[10] = 42;       // ❌ Writing beyond allocated memory!
+                    // Corrupts heap metadata → crash later
+
+// ✅ Fix: Track array size, check bounds
+size_t arr_size = 5;
+if (index < arr_size) {
+    arr[index] = 42;  // ✅ Safe
+}
+```
+
+#### 7. Returning Stack Address
+```c
+int *get_value(void) {
+    int x = 42;      // x lives on stack
+    return &x;       // ❌ Returning address of local variable!
+}   // x is destroyed here
+
+int *ptr = get_value();
+printf("%d\n", *ptr);  // ❌ x no longer exists!
+
+// ✅ Fix: Allocate on heap
+int *get_value(void) {
+    int *x = malloc(sizeof(int));
+    *x = 42;
+    return x;        // ✅ Heap memory persists
+}
+// Caller must free!
+```
+
+#### 8. Mismatched Allocation/Deallocation
+```c
+// ❌ Wrong: mixing C++ new with C free
+int *ptr = new int;  // C++ allocation
+free(ptr);           // C deallocation → undefined!
+
+// ❌ Wrong: freeing stack memory
+int x = 42;
+free(&x);            // Crash! &x is not from malloc
+
+// ✅ Always match:
+// malloc/calloc/realloc → free
+// new → delete (C++)
+// new[] → delete[] (C++)
+```
+
+### The sizeof Operator
+
+`sizeof` returns the size in bytes. Use it to make allocations portable:
+
+```c
+// ❌ Fragile: assumes int is 4 bytes
+int *arr = malloc(40);  // 10 ints... maybe?
+
+// ✅ Robust: works regardless of type size
+int *arr = malloc(10 * sizeof(int));
+
+// ✅ Even better: size from variable (type changes automatically)
+int *arr = malloc(10 * sizeof(*arr));
+```
+
+**sizeof with different types:**
+```c
+printf("char:   %zu bytes\n", sizeof(char));    // 1
+printf("int:    %zu bytes\n", sizeof(int));     // 4 (usually)
+printf("long:   %zu bytes\n", sizeof(long));    // 4 or 8
+printf("float:  %zu bytes\n", sizeof(float));   // 4
+printf("double: %zu bytes\n", sizeof(double));  // 8
+printf("pointer:%zu bytes\n", sizeof(int*));    // 4 or 8
+
+// Struct size includes padding!
+typedef struct {
+    char c;    // 1 byte
+    int i;     // 4 bytes
+} Example;
+printf("Example: %zu bytes\n", sizeof(Example));  // Often 8, not 5!
+```
+
+### Memory in This Project
+
+This project uses **stack allocation only** for simplicity:
 
 ```c
 // main.c
 int main(void) {
-    GameState game;           // Stack allocation
-    game_init_session(&game); // Pass address to functions
+    GameState game;           // ~50 bytes on stack
+    UserInterface *ui = ui_get_cli_interface();
     
-    // ... play the game ...
+    game_init_session(&game);
+    // ... play games ...
     
-    return 0;  // game automatically cleaned up
+    return 0;  // 'game' automatically cleaned up
 }
 ```
 
-**Why stack is fine here:**
-- `GameState` is small (~100 bytes)
-- Only one game exists at a time
+**Why stack is sufficient here:**
+- `GameState` is small (~50 bytes)
+- Only one game instance needed
 - Lifetime matches the program
+- No need for dynamic sizing
 
-### When to Use Heap
+**When we would use heap:**
+- Storing multiple game histories
+- Dynamically sized board (runtime-configurable)
+- Network multiplayer (games outlive connections)
+- Undo/redo stack of arbitrary depth
 
-Use `malloc()` when:
-- Data is too large for stack (arrays of thousands of elements)
-- Data must outlive the function that creates it
-- Size isn't known at compile time
-- Building data structures (linked lists, trees)
-
-### Memory Errors to Avoid
-
-**1. Uninitialized pointers:**
-```c
-int *ptr;           // ❌ Points to garbage!
-*ptr = 5;           // ❌ Crash or corruption
-```
-
-**2. Use after free:**
-```c
-int *ptr = malloc(sizeof(int));
-free(ptr);
-*ptr = 10;          // ❌ Undefined behavior!
-```
-
-**3. Memory leaks:**
-```c
-void leak(void) {
-    int *ptr = malloc(sizeof(int));
-    return;          // ❌ Never freed! Memory leaked.
-}
-```
-
-**4. Double free:**
-```c
-free(ptr);
-free(ptr);          // ❌ Crash!
-```
-
-**5. Dangling pointer (stack):**
-```c
-int *get_value(void) {
-    int x = 42;
-    return &x;       // ❌ x is destroyed when function returns!
-}
-
-int *ptr = get_value();
-*ptr;                // ❌ Accessing invalid memory
-```
-
-### Best Practices
+### Best Practices Summary
 
 ```c
-// Initialize pointers
+// 1. Always initialize pointers
 int *ptr = NULL;
 
-// Check malloc result
+// 2. Always check malloc result
 ptr = malloc(sizeof(int));
 if (ptr == NULL) {
-    fprintf(stderr, "Out of memory!\n");
-    exit(1);
+    perror("malloc failed");
+    exit(EXIT_FAILURE);
 }
 
-// Set to NULL after freeing
+// 3. Use sizeof with the variable, not the type
+Thing *things = malloc(n * sizeof(*things));
+
+// 4. Free in reverse order of allocation
+free(inner);
+free(outer);
+
+// 5. Set pointers to NULL after freeing
 free(ptr);
 ptr = NULL;
 
-// Use tools to detect leaks
-// valgrind --leak-check=full ./program
+// 6. Use calloc for zero-initialized memory
+int *zeroes = calloc(100, sizeof(int));
+
+// 7. Check realloc carefully (may return NULL)
+int *new_ptr = realloc(ptr, new_size);
+if (new_ptr == NULL) {
+    // ptr is still valid! Don't lose it.
+    free(ptr);
+    exit(EXIT_FAILURE);
+}
+ptr = new_ptr;
+
+// 8. Document ownership in comments
+// Caller is responsible for freeing returned pointer
+GameState *create_game(void);
 ```
+
+### Memory Debugging Tools
+
+**Valgrind (Linux/macOS):**
+```bash
+# Compile with debug symbols
+gcc -g -O0 program.c -o program
+
+# Run with memory checking
+valgrind --leak-check=full --show-leak-kinds=all ./program
+```
+
+**Valgrind output example:**
+```
+==12345== HEAP SUMMARY:
+==12345==   in use at exit: 72 bytes in 3 blocks
+==12345==   total heap usage: 10 allocs, 7 frees, 1,024 bytes allocated
+==12345== 
+==12345== 24 bytes in 1 blocks are definitely lost in record 1 of 3
+==12345==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/...)
+==12345==    by 0x108721: create_game (game.c:42)
+==12345==    by 0x108800: main (main.c:15)
+```
+
+**AddressSanitizer (Clang/GCC):**
+```bash
+# Compile with sanitizer
+gcc -fsanitize=address -g program.c -o program
+
+# Run normally - crashes with detailed report on memory errors
+./program
+```
+
+**Static Analysis:**
+```bash
+# Clang static analyzer
+scan-build gcc -c *.c
+
+# Cppcheck
+cppcheck --enable=all src/
+```
+
+### Quick Reference Table
+
+| Operation | Function | Notes |
+|-----------|----------|-------|
+| Allocate | `malloc(size)` | Uninitialized memory |
+| Allocate zeroed | `calloc(count, size)` | All bytes set to 0 |
+| Resize | `realloc(ptr, new_size)` | May move data |
+| Free | `free(ptr)` | Sets memory as available |
+| Get size | `sizeof(type)` | Compile-time constant |
+| Copy memory | `memcpy(dst, src, n)` | Non-overlapping only |
+| Move memory | `memmove(dst, src, n)` | Handles overlap |
+| Fill memory | `memset(ptr, value, n)` | Sets bytes to value |
+| Compare | `memcmp(a, b, n)` | Returns 0 if equal |
 
 ---
 
 ## Separation of Concerns
-
 **The single most important principle:** Each module should do ONE thing well.
 
 ### The Problem: "God Objects"
-
 When one file does everything, you get:
 - 🔴 Files with 500+ lines that are hard to navigate
 - 🔴 Changing one feature breaks unrelated features
@@ -850,23 +1366,21 @@ When one file does everything, you get:
 - 🔴 Multiple developers can't work simultaneously
 
 ### The Solution: Single Responsibility
-
 Ask: *"If I had to describe what this file does in one sentence, could I?"*
 
-| File | One Sentence | Lines |
-|------|--------------|-------|
-| `board.c` | Manages a 3×3 array of cells | 32 |
-| `win_condition_calculator.c` | Checks if someone won or it's a draw | 31 |
-| `ai.c` | Picks the optimal move (minimax) | 79 |
-| `ai_easy.c` | Picks a random valid move | 25 |
-| `tictactoe.c` | Coordinates a game session | 169 |
-| `display.c` | Renders the board and messages | 53 |
-| `human.c` | Gets input from the user | 72 |
+| File                         | One Sentence                                      | Lines |
+|------------------------------|---------------------------------------------------|-------|
+| `board.c`                    | Manages a NxN array of cells                      | ~30   |
+| `win_condition_calculator.c` | Checks if someone won or it's a draw              | ~100  |
+| `ai.c`                       | Picks the optimal move (minimax)                  | ~80   |
+| `ai_easy.c`                  | Picks a random valid move                         | ~25   |
+| `tictactoe.c`                | Coordinates a game session                        | ~170  |
+| `ui_cli.c`                   | CLI implementation of UserInterface               | ~200  |
+| `ui_interface.h`             | Defines abstract UI interface (function pointers) | ~45   |
 
 If your sentence has "and" in it, you might need to split.
 
 ### How We Split This Project
-
 **Step 1: Identify the data**
 ```c
 // What's the core data? A 9-cell board.
@@ -886,7 +1400,15 @@ int board_is_empty(const CellValue board[BOARD_SIZE], int position);
 // win_condition_calculator.c - Algorithm, no side effects
 CellValue wcc_check_winner(const CellValue board[BOARD_SIZE]);
 int wcc_is_draw(const CellValue board[BOARD_SIZE], int move_count);
+
+// Testable helper functions for each direction
+CellValue wcc_check_rows(const CellValue board[BOARD_SIZE]);
+CellValue wcc_check_columns(const CellValue board[BOARD_SIZE]);
+CellValue wcc_check_main_diagonals(const CellValue board[BOARD_SIZE]);
+CellValue wcc_check_anti_diagonals(const CellValue board[BOARD_SIZE]);
 ```
+
+📄 **See [Win Condition Calculator Algorithm](algorithms/WIN_CONDITION_CALCULATOR.md)** for detailed breakdown.
 
 **Step 4: Identify coordination logic**
 ```c
@@ -900,49 +1422,67 @@ int game_make_move(GameState *state, int position) {
 }
 ```
 
-**Step 5: Separate I/O from logic**
+**Step 5: Abstract I/O with function pointers**
 ```c
-// display.c - Output only, no game logic
-void display_board(const GameState *state);
+// ui_interface.h - Define the interface
+typedef struct UserInterface {
+    void (*display_board)(const GameState *state);
+    void (*display_status)(GameStatus status);
+    int  (*get_move)(GameState *game);
+    // ... more functions
+} UserInterface;
 
-// human.c - Input only, validates then returns
-int human_get_move(GameState *game);
+// ui_cli.c - CLI implementation
+static void cli_display_board(const GameState *state) { /* printf... */ }
+static UserInterface cli_interface = {
+    .display_board = cli_display_board,
+    // ...
+};
+UserInterface *ui_get_cli_interface(void) { return &cli_interface; }
+
+// main.c - Uses the interface, doesn't know about implementation
+UserInterface *ui = ui_get_cli_interface();
+ui->display_board(game);  // Could be CLI, GUI, or web!
 ```
 
 ### Dependency Rules
-
 ```
 ┌─────────────────────────────────────────────────┐
 │  main.c  (entry point, wires everything)        │
 └─────────────────────────────────────────────────┘
          │
-         ▼
-┌─────────────────────────────────────────────────┐
-│  tictactoe.c  (game coordinator)                │
-│  - Calls board.c, ai.c, win_condition_calc...   │
-└─────────────────────────────────────────────────┘
+         ├─────────────────────────────┐
+         ▼                             ▼
+┌─────────────────────────┐  ┌─────────────────────────────┐
+│  tictactoe.c            │  │  ui_interface.h             │
+│  (game coordinator)     │  │  (UI abstraction layer)     │
+└─────────────────────────┘  └─────────────────────────────┘
+         │                             │
+         │                             ▼
+         │                   ┌─────────────────────────────┐
+         │                   │  ui_cli.c (CLI impl)        │
+         │                   │  ui_gui_example.c (GUI)     │
+         │                   └─────────────────────────────┘
          │
-         ▼
-┌──────────────┐  ┌──────────────┐  ┌─────────────┐
-│  board.c     │  │  ai.c        │  │  display.c  │
-│  (data ops)  │  │  (algorithm) │  │  (output)   │
-└──────────────┘  └──────────────┘  └─────────────┘
-         │                │
-         ▼                ▼
+    ┌────┴─────────────────┐
+    ▼         ▼            ▼
+┌────────┐ ┌────────┐ ┌────────────────────────────────────┐
+│board.c │ │ai.c    │ │  win_condition_calculator.c        │
+│(data)  │ │ai_easy │ │  (pure functions, testable helpers)│
+└────────┘ └────────┘ └────────────────────────────────────┘
+    │           │                      │
+    └─────┬─────┴──────────────────────┘
+          ▼
 ┌─────────────────────────────────────────────────┐
-│  win_condition_calculator.c  (pure function)    │
-└─────────────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────────────────┐
-│  constants.h  (types and constants only)        │
+│  constants.h  (BOARD_DIM, BOARD_SIZE, types)    │
 └─────────────────────────────────────────────────┘
 ```
 
 **Rule:** Arrows point DOWN only. Lower modules never `#include` higher modules.
 
-### Practical Test: Can You Swap?
+**UI Abstraction:** The `UserInterface` struct uses function pointers to allow swapping CLI/GUI implementations without changing game logic.
 
+### Practical Test: Can You Swap?
 Good separation means you can swap implementations:
 
 ```c
@@ -960,11 +1500,9 @@ If adding a feature requires editing many files, your separation might need work
 ---
 
 ## API Design
-
 An **API** (Application Programming Interface) is the set of functions you expose for others to use. Good API design makes code easy to use correctly and hard to use incorrectly.
 
 ### Principle 1: Consistent Naming Convention
-
 Pick a pattern and stick to it:
 
 ```c
@@ -990,15 +1528,14 @@ int       wcc_is_draw(const CellValue board[BOARD_SIZE], int move_count);
 **Benefit:** You can guess function names without looking them up.
 
 ### Principle 2: Predictable Return Values
-
 Choose a convention and document it:
 
-| Pattern | Meaning | Example |
-|---------|---------|---------|
-| `int` returns 0/-1 | 0 = success, -1 = error | `game_make_move()` |
-| `int` returns 0/1 | 0 = false, non-zero = true | `game_is_over()` |
-| Enum/value return | The actual result | `game_get_current_player()` |
-| `void` return | Always succeeds (or asserts) | `board_init()` |
+| Pattern            | Meaning                      | Example                     |
+|--------------------|------------------------------|-----------------------------|
+| `int` returns 0/-1 | 0 = success, -1 = error      | `game_make_move()`          |
+| `int` returns 0/1  | 0 = false, non-zero = true   | `game_is_over()`            |
+| Enum/value return  | The actual result            | `game_get_current_player()` |
+| `void` return      | Always succeeds (or asserts) | `board_init()`              |
 
 ```c
 // Caller knows exactly what to expect:
@@ -1014,7 +1551,6 @@ CellValue player = game_get_current_player(&game);  // Always valid
 ```
 
 ### Principle 3: First Parameter is the "Object"
-
 In C, we simulate object-oriented style by passing the struct first:
 
 ```c
@@ -1030,7 +1566,6 @@ game_is_over(&game);
 ```
 
 ### Principle 4: Minimize Required Knowledge
-
 Each module should require the **minimum** knowledge to use:
 
 ```c
@@ -1048,7 +1583,6 @@ int game_make_move(GameState *state, int position) {
 **Benefit:** `board.c` can be reused in a completely different game.
 
 ### Principle 5: Symmetric Operations
-
 If you can do something, you should be able to undo it or query it:
 
 ```c
@@ -1062,7 +1596,6 @@ void game_init_session(GameState *state);  // Setup
 ```
 
 ### Principle 6: Named Constants for All Literals
-
 ```c
 // ❌ What does 9 mean? What does 8 mean?
 for (int i = 0; i < 9; i++) { ... }
@@ -1077,7 +1610,6 @@ const int combos[NUM_WIN_COMBOS][3] = { ... };
 ```
 
 ### Anti-Pattern: Exposing Internal State
-
 ```c
 // ❌ BAD: Caller must know internal rules
 game.game_count = 0;  // Why? What breaks if I don't?
@@ -1093,11 +1625,9 @@ game_set_winner_symbol_choice(&game, choice);  // Just works
 ---
 
 ## Defensive Programming
-
 Defensive programming means **assuming things will go wrong** and writing code that handles failures gracefully.
 
 ### Decision Tree: How Should I Handle This?
-
 ```
 Is this a PROGRAMMER error (bug)?
     │
@@ -1116,7 +1646,6 @@ Is this a PROGRAMMER error (bug)?
 ```
 
 ### Technique 1: NULL Pointer Guards
-
 **Every public function should check its pointer parameters:**
 
 ```c
@@ -1144,7 +1673,6 @@ int game_make_move(GameState *state, int position) {
 ```
 
 ### Technique 2: Assertions for Invariants
-
 Use `assert()` for conditions that **should never be false** if the code is correct:
 
 ```c
@@ -1170,7 +1698,6 @@ int ai_get_computer_move(GameState *state) {
 - ❌ Don't use for user input validation (would disappear in production!)
 
 ### Technique 3: Error Return Codes
-
 For recoverable errors, return a status code:
 
 ```c
@@ -1193,7 +1720,6 @@ if (board_place(board, pos, CELL_X) == -1) {
 ```
 
 ### Technique 4: Const Correctness
-
 Mark read-only data as `const` so the compiler enforces it:
 
 ```c
@@ -1216,7 +1742,6 @@ void display_board(const GameState *state) {
 3. **Enables optimizations** — compiler can make assumptions
 
 ### Technique 5: Bounds Checking
-
 **C does not check array bounds.** You must do it yourself.
 
 ```c
@@ -1239,7 +1764,6 @@ int board_is_valid_move(const CellValue board[BOARD_SIZE], int position) {
 **Rule:** Public functions validate; private functions can trust their callers.
 
 ### Technique 6: Fail Fast, Fail Loud
-
 **❌ Silent failure (bad):**
 ```c
 int ai_get_computer_move(GameState *state) {
@@ -1261,18 +1785,16 @@ int ai_get_computer_move(GameState *state) {
 ---
 
 ## Testing
-
 ### Why Write Tests?
 
-| Benefit | Without Tests | With Tests |
-|---------|---------------|------------|
-| Finding bugs | Discover in production | Discover immediately |
-| Changing code | "Did I break something?" | Run tests and know |
-| Documentation | Read the implementation | Read the test names |
-| Onboarding | "How does this work?" | "Look at the tests" |
+| Benefit       | Without Tests            | With Tests           |
+|---------------|--------------------------|----------------------|
+| Finding bugs  | Discover in production   | Discover immediately |
+| Changing code | "Did I break something?" | Run tests and know   |
+| Documentation | Read the implementation  | Read the test names  |
+| Onboarding    | "How does this work?"    | "Look at the tests"  |
 
 ### The Testing Mindset
-
 **Don't ask:** "Does my code work?"  
 **Ask:** "What are all the ways my code could fail?"
 
@@ -1286,7 +1808,6 @@ int ai_get_computer_move(GameState *state) {
 ```
 
 ### Test Structure: Arrange-Act-Assert
-
 Every test follows this pattern:
 
 ```c
@@ -1305,7 +1826,6 @@ void test_board_place_writes_symbol_to_cell(void) {
 ```
 
 ### Test Naming Convention
-
 Name tests so you can read them like a sentence:
 
 ```c
@@ -1319,7 +1839,6 @@ void test_x_wins_when_completing_top_row(void);
 **When a test fails, the name tells you exactly what broke.**
 
 ### What to Test: The Testing Pyramid
-
 ```
         /\
        /  \  Edge cases (weird inputs, boundaries)
@@ -1395,27 +1914,25 @@ void test_board_place_does_not_modify_board_on_failure(void) {
 
 ### Test Coverage in This Project
 
-| Test File | Tests | What's Covered |
-|-----------|-------|----------------|
-| `test_board.c` | 12 | init, place, is_empty, is_valid_move |
-| `test_win_condition_calculator.c` | 14 | All 8 winning lines, draws, partial boards |
-| `test_tictactoe.c` | 58 | All API functions, game flow, AI behavior |
-| **Total** | **84** | |
+| Test File                         | Tests   | What's Covered                                     |
+|-----------------------------------|---------|----------------------------------------------------|
+| `test_board.c`                    | 12      | init, place, is_empty, is_valid_move               |
+| `test_win_condition_calculator.c` | 36      | rows, columns, diagonals (testable helpers), draws |
+| `test_tictactoe.c`                | 58      | All API functions, game flow, AI behavior          |
+| **Total**                         | **106** |                                                    |
 
 ### Running Tests
-
 ```bash
 # Run all tests
-~/.gem/ruby/2.6.0/bin/ceedling test:all
+ceedling test:all
 
 # Expected output:
-# TESTED:  84
-# PASSED:  84
+# TESTED:  106
+# PASSED:  106
 # FAILED:   0
 ```
 
 ### When Tests Fail
-
 A failing test tells you:
 1. **What** broke (the test name)
 2. **Where** it broke (file and line number)
@@ -1433,23 +1950,21 @@ test_board_place_writes_symbol_to_cell: FAIL
 ---
 
 ## Code Smells and Refactoring
-
 A **code smell** is a pattern that suggests something might be wrong. Not necessarily a bug, but a sign of deeper problems.
 
 ### How to Spot Smells
 
-| Symptom | Possible Smell |
-|---------|----------------|
-| Function > 50 lines | God function |
-| File > 300 lines | Missing separation of concerns |
-| Copy-pasted code | Missing abstraction |
-| Lots of `if/else` chains | Missing polymorphism or lookup table |
-| Magic numbers everywhere | Missing named constants |
-| Caller manipulates struct fields | Incomplete API |
-| Comments explaining tricky code | Code should be clearer |
+| Symptom                          | Possible Smell                       |
+|----------------------------------|--------------------------------------|
+| Function > 50 lines              | God function                         |
+| File > 300 lines                 | Missing separation of concerns       |
+| Copy-pasted code                 | Missing abstraction                  |
+| Lots of `if/else` chains         | Missing polymorphism or lookup table |
+| Magic numbers everywhere         | Missing named constants              |
+| Caller manipulates struct fields | Incomplete API                       |
+| Comments explaining tricky code  | Code should be clearer               |
 
 ### Smell 1: Magic Numbers
-
 **Symptom:** Unexplained numeric literals
 
 ```c
@@ -1476,7 +1991,6 @@ for (int i = 0; i < BOARD_SIZE; i++) {
 **Why it matters:** When you need to change the board size, you change ONE place, not 47.
 
 ### Smell 2: God Function
-
 **Symptom:** A function that does too many things
 
 ```c
@@ -1518,7 +2032,6 @@ static void update_status(GameState *state) {
 ```
 
 ### Smell 3: Leaking Abstraction
-
 **Symptom:** Caller has to know internal rules to use the API
 
 ```c
@@ -1545,7 +2058,6 @@ game_set_winner_symbol_choice(&game, choice);
 **Rule:** If callers need to touch struct fields directly, your API is incomplete.
 
 ### Smell 4: Duplicated Logic
-
 **Symptom:** Same code pattern appears in multiple places
 
 ```c
@@ -1573,7 +2085,6 @@ CellValue winner = wcc_check_winner(board);
 ```
 
 ### Smell 5: Silent Failure
-
 **Symptom:** Errors are hidden instead of reported
 
 ```c
@@ -1598,7 +2109,6 @@ int ai_get_computer_move(GameState *state) {
 **Principle:** Make bugs painful during development so they get fixed.
 
 ### Smell 6: Obsolete Code
-
 **Symptom:** Unused constants, functions, or includes
 
 ```c
@@ -1617,7 +2127,6 @@ grep -r "BOARD_CENTER" src/ include/  # If no results, delete it
 ```
 
 ### Smell 7: Inconsistent Style
-
 **Symptom:** Mixed conventions in the same codebase
 
 ```c
@@ -1642,7 +2151,6 @@ int get_count(void);
 ```
 
 ### Refactoring Checklist
-
 Before committing changes, ask:
 
 - [ ] Did I remove any magic numbers?
@@ -1656,9 +2164,7 @@ Before committing changes, ask:
 ---
 
 ## C Pitfalls and How to Avoid Them
-
 ### Pitfall 1: Missing Include for NULL
-
 **❌ Error:**
 ```c
 // ai.c
@@ -1676,7 +2182,6 @@ if (state == NULL) { ... }
 **Why:** `NULL` is not a keyword in C - it's defined in several headers (`<stdlib.h>`, `<stdio.h>`, `<string.h>`, etc.). Always include the appropriate header.
 
 ### Pitfall 2: Empty Parameter List `()`
-
 **❌ Wrong:**
 ```c
 int newline();  // Means "unknown number of arguments" in C!
@@ -1698,7 +2203,6 @@ warning: a function declaration without a prototype is deprecated in all version
 ```
 
 ### Pitfall 3: Missing Newline at End of File
-
 **❌ Error:**
 ```c
 // ai.c - last line
@@ -1716,7 +2220,6 @@ warning: no newline at end of file [-Wnewline-eof]
 **Why:** The C standard requires all source files to end with a newline. Some compilers/tools break without it.
 
 ### Pitfall 4: Array Out of Bounds
-
 **❌ Dangerous:**
 ```c
 CellValue board[9];
@@ -1740,7 +2243,6 @@ int board_place(CellValue board[BOARD_SIZE], int position, CellValue symbol) {
 ```
 
 ### Pitfall 5: Off-by-One Errors
-
 **❌ Common mistake:**
 ```c
 for (int i = 0; i <= 9; i++) {  // Should be i < 9
@@ -1758,7 +2260,6 @@ for (int i = 0; i < BOARD_SIZE; i++) {
 **Remember:** Arrays are **0-indexed**. An array of size 9 has indices 0-8.
 
 ### Pitfall 6: Pointer Dereferencing NULL
-
 **❌ Crash:**
 ```c
 void game_init(GameState *state) {
@@ -1775,7 +2276,6 @@ void game_init(GameState *state) {
 ```
 
 ### Pitfall 7: Uninitialized Variables
-
 **❌ Undefined Behavior:**
 ```c
 int best_move;  // Garbage value!
@@ -1789,7 +2289,6 @@ int best_move = -1;  // Sentinel value
 ```
 
 ### Pitfall 8: Silent Integer Promotion
-
 **❌ Subtle bug:**
 ```c
 char a = 200;
@@ -1806,7 +2305,6 @@ int result = a + b;  // No overflow if result fits in int
 ```
 
 ### Pitfall 9: `=` vs `==`
-
 **❌ Assignment instead of comparison:**
 ```c
 if (state->status = ONGOING) {  // ALWAYS true! Assigns ONGOING to status
@@ -1824,7 +2322,6 @@ if (state->status == ONGOING) {  // Correct comparison
 **Prevention:** Enable warnings: `-Wall -Wextra`
 
 ### Pitfall 10: String Literals Are Immutable
-
 **❌ Crash:**
 ```c
 char *str = "Hello";
@@ -1838,7 +2335,6 @@ str[0] = 'h';          // OK
 ```
 
 ### Pitfall 11: `scanf` Buffer Overflow
-
 **❌ Dangerous:**
 ```c
 char name[10];
@@ -1854,7 +2350,6 @@ scanf("%9s", name);  // Max 9 chars + null terminator
 **Better:** Use `fgets()` for string input.
 
 ### Pitfall 12: Forgetting `break` in `switch`
-
 **❌ Fall-through:**
 ```c
 switch (cell) {
@@ -1880,7 +2375,6 @@ switch (cell) {
 ```
 
 ### Pitfall 13: Ignoring Return Values
-
 **❌ Silent Failure:**
 ```c
 scanf("%d", &position);  // Returns number of items read
@@ -1897,7 +2391,6 @@ if (scanf("%d", &position) != 1) {
 ```
 
 ### Pitfall 14: `memset` with Non-Zero Values
-
 **❌ Only works for 0 and -1:**
 ```c
 int arr[10];
@@ -1919,7 +2412,6 @@ memset(board, CELL_EMPTY, sizeof(board));  // OK if CELL_EMPTY is 0
 ```
 
 ### Pitfall 15: Header Guard Typos
-
 **❌ Copy-paste error:**
 ```c
 // board.h
@@ -1943,7 +2435,6 @@ memset(board, CELL_EMPTY, sizeof(board));  // OK if CELL_EMPTY is 0
 ---
 
 ## Compiler Flags for Catching Errors
-
 **Always compile with warnings enabled:**
 
 ```bash
@@ -1962,7 +2453,6 @@ gcc -std=c99 -Wall -Wextra -pedantic -Werror -O2 \
 ---
 
 ## Debugging Tips
-
 ### 1. Print Everything
 ```c
 printf("DEBUG: position = %d\n", position);
@@ -2008,7 +2498,6 @@ valgrind --leak-check=full ./tictactoe
 ---
 
 ## Best Practices Summary
-
 ✅ **DO:**
 - Check all pointers for NULL before dereferencing
 - Validate all array indices before access
@@ -2033,15 +2522,17 @@ valgrind --leak-check=full ./tictactoe
 ---
 
 ## Next Steps
-
 1. **Explore the codebase:**
    - Read `src/board.c` - Pure data structure operations
-   - Read `src/win_condition_calculator.c` - Algorithm implementation
+   - Read `src/win_condition_calculator.c` - Algorithm with testable helpers
    - Read `src/tictactoe.c` - Module coordination
+   - Read `include/ui_interface.h` - Function pointer abstraction
+   - Read `src/ui_cli.c` - CLI implementation of the interface
    - Read `tests/` - See how functions are tested
 
 2. **Modify the game:**
-   - Change board size to 4x4 (update `BOARD_SIZE` and winning combos)
+   - Change board size to 4x4 (change `BOARD_DIM` in `constants.h`)
+   - Implement a GUI using `ui_gui_example.c` as a template
    - Add a third player (extend `CellValue` enum)
    - Implement a medium difficulty AI
    - Add undo/redo functionality
@@ -2050,48 +2541,45 @@ valgrind --leak-check=full ./tictactoe
    - Add more edge case tests
    - Add logging to track game events
    - Implement save/load game state
-   - Create a CLI menu system
+   - Create a web interface using the `UserInterface` pattern
 
 4. **Build and test:**
    ```bash
    # Build the game
-   gcc -std=c99 -Wall -Wextra -pedantic -Werror -O2 \
-       src/*.c -Iinclude -o tictactoe
+   ceedling release
    
    # Run the game
-   ./tictactoe
+   ./build/release/tictactoe.exe
    
-   # Run tests
-   ~/.gem/ruby/2.6.0/bin/ceedling test:all
+   # Run tests (106 tests)
+   ceedling test:all
    ```
 
 ---
 
 ## Project Structure Overview
-
 ```
 the-dreaded-c/
 ├── include/           # Header files (.h)
 │   ├── ai.h
 │   ├── ai_easy.h
 │   ├── board.h
-│   ├── constants.h
-│   ├── display.h
-│   ├── human.h
+│   ├── constants.h        # BOARD_DIM, BOARD_SIZE, WIN_LENGTH, enums
 │   ├── tictactoe.h
+│   ├── ui_interface.h     # UserInterface abstraction (function pointers)
 │   ├── utils.h
 │   └── win_condition_calculator.h
 ├── src/               # Implementation files (.c)
-│   ├── ai.c           # Hard AI (minimax algorithm)
-│   ├── ai_easy.c      # Easy AI (random moves)
-│   ├── board.c        # Board operations
-│   ├── constants.c    # Global constants
-│   ├── display.c      # UI rendering
-│   ├── human.c        # User input handling
-│   ├── main.c         # Program entry point
-│   ├── tictactoe.c    # Game coordinator
-│   ├── utils.c        # Helper utilities
-│   └── win_condition_calculator.c  # Win/draw detection
+│   ├── ai.c               # Hard AI (minimax algorithm)
+│   ├── ai_easy.c          # Easy AI (random moves)
+│   ├── board.c            # Board operations
+│   ├── constants.c        # Global constants
+│   ├── main.c             # Program entry point
+│   ├── tictactoe.c        # Game coordinator
+│   ├── ui_cli.c           # CLI implementation of UserInterface
+│   ├── ui_gui_example.c   # Example GUI implementation (SDL2)
+│   ├── utils.c            # Helper utilities
+│   └── win_condition_calculator.c  # Win/draw detection (testable helpers)
 ├── tests/             # Unit tests
 │   ├── test_board.c                    
 │   ├── test_tictactoe.c                
@@ -2104,7 +2592,6 @@ the-dreaded-c/
 ---
 
 ## Real Bugs We Fixed in This Project
-
 ### Bug 1: Implicit Function Definition
 **Symptom:** `warning: implicit declaration of function 'NULL'`  
 **Cause:** Missing `#include <stdlib.h>` in `ai.c`  
@@ -2135,7 +2622,6 @@ the-dreaded-c/
 ---
 
 ## Additional Resources
-
 - **Official C Standard**: ISO/IEC 9899:2018 (complex, formal)
 - **Beej's Guide to C**: https://beej.us/guide/bgc/ (beginner-friendly)
 - **K&R C**: "The C Programming Language" (classic textbook)

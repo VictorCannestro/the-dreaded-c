@@ -16,11 +16,11 @@ By studying each level, you'll understand *why* best practices exist—not just 
 
 ## Skill Level Overview
 
-| Level   | Name               | Focus                                | AI      | Tests    | Lines of Code    |
-|---------|--------------------|--------------------------------------|---------|----------|------------------|
-| Level 1 | Naive              | Single file, magic numbers, globals  | Random  | None     | ~200 (1 file)    |
-| Level 2 | Modular            | Separate files, enums, structs       | Random  | None     | ~350 (14 files)  |
-| Level 3 | _(Root Directory)_ | Full features, minimax AI, 80+ tests | Minimax | Ceedling | ~800 (20+ files) |
+| Level   | Name               | Focus                                          | AI      | Tests    | Lines of Code    |
+|---------|--------------------|------------------------------------------------|---------|----------|------------------|
+| Level 1 | Naive              | Single file, magic numbers, globals            | Random  | None     | ~200 (1 file)    |
+| Level 2 | Modular            | Separate files, enums, structs                 | Random  | None     | ~350 (14 files)  |
+| Level 3 | _(Root Directory)_ | UI abstraction, configurable board, 100+ tests | Minimax | Ceedling | ~900 (20+ files) |
 
 ---
 
@@ -84,8 +84,10 @@ The same game split into logical modules. Introduces enums, structs, and data-dr
 
 The full implementation with:
 - 10 focused modules — clean architecture
+- **UI abstraction layer** — swap CLI for GUI without changing game logic
+- **Configurable board size** — change one constant for 4x4, 5x5 boards
 - Minimax AI with difficulty levels — algorithmic sophistication
-- 80+ unit tests (100% pass rate) — confidence in correctness
+- **106 unit tests** (100% pass rate) — confidence in correctness
 - Comprehensive documentation — maintainable by others
 - Ceedling build system — professional tooling
 - NULL checks and assertions — defensive programming
@@ -93,34 +95,37 @@ The full implementation with:
 
 **What changes between Level 2 → Level 3:**
 
-| Aspect  | Level 2         | Level 3                 | Why It Matters                |
-|---------|-----------------|-------------------------|-------------------------------|
-| Testing | None            | 80+ unit tests          | Catch bugs before users do    |
-| AI      | Random moves    | Minimax (unbeatable)    | Real algorithm implementation |
-| Safety  | Minimal         | NULL checks, assertions | Fails fast with clear errors  |
-| Docs    | Basic README    | Full API docs, guides   | Team can maintain it          |
-| Build   | Simple Makefile | Ceedling + CI ready     | Scales to real projects       |
+| Aspect        | Level 2          | Level 3                     | Why It Matters                                  |
+|---------------|------------------|-----------------------------|-------------------------------------------------|
+| Testing       | None             | 106 unit tests              | Catch bugs before users do                      |
+| AI            | Random moves     | Minimax (unbeatable)        | Real algorithm implementation                   |
+| UI            | Hardcoded printf | `UserInterface` abstraction | Swap CLI/GUI without rewrite                    |
+| Board Size    | Hardcoded 3x3    | `BOARD_DIM` configurable    | Extend to 4x4, 5x5, etc.                        |
+| Win Detection | Single function  | Testable helper functions   | `wcc_check_rows()`, `wcc_check_columns()`, etc. |
+| Safety        | Minimal          | NULL checks, assertions     | Fails fast with clear errors                    |
+| Docs          | Basic README     | Full API docs, guides       | Team can maintain it                            |
+| Build         | Simple Makefile  | Ceedling + CI ready         | Scales to real projects                         |
 
-**Build:** `cd .. && ceedling release && ./build/release/tictactoe.exe`
-
----
 
 ## Comparison Matrix
 
-| Feature               | Level 1 | Level 2  | Level 3  |
-|-----------------------|---------|----------|----------|
-| Separate files        | ❌       | ✅        | ✅        |
-| Enums/constants       | ❌       | ✅        | ✅        |
-| GameState struct      | ❌       | ✅        | ✅        |
-| Data-driven win check | ❌       | ✅        | ✅        |
-| NULL checks           | ❌       | ❌        | ✅        |
-| Unit tests            | ❌       | ❌        | ✅        |
-| Smart AI (minimax)    | ❌       | ❌        | ✅        |
-| Difficulty levels     | ❌       | ❌        | ✅        |
-| Winner picks symbol   | ❌       | ❌        | ✅        |
-| API documentation     | ❌       | Partial  | ✅        |
-| Build system          | Basic   | Makefile | Ceedling |
-| CI/CD ready           | ❌       | ❌        | ✅        |
+| Feature                 | Level 1 | Level 2  | Level 3  |
+|-------------------------|---------|----------|----------|
+| Separate files          | ❌       | ✅        | ✅        |
+| Enums/constants         | ❌       | ✅        | ✅        |
+| GameState struct        | ❌       | ✅        | ✅        |
+| Data-driven win check   | ❌       | ✅        | ✅        |
+| NULL checks             | ❌       | ❌        | ✅        |
+| Unit tests              | ❌       | ❌        | ✅        |
+| Smart AI (minimax)      | ❌       | ❌        | ✅        |
+| Difficulty levels       | ❌       | ❌        | ✅        |
+| Winner picks symbol     | ❌       | ❌        | ✅        |
+| UI abstraction layer    | ❌       | ❌        | ✅        |
+| Configurable board size | ❌       | ❌        | ✅        |
+| Testable win detection  | ❌       | ❌        | ✅        |
+| API documentation       | ❌       | Partial  | ✅        |
+| Build system            | Basic   | Makefile | Ceedling |
+| CI/CD ready             | ❌       | ❌        | ✅        |
 
 ---
 
@@ -216,10 +221,12 @@ display_result(winner);                   // Pure display
 3. **Simulate testing** — Notice how `GameState *state` could be created in a test with known values
 
 ### With Level 3:
-1. **Run tests** — Execute `ceedling test:all` and see 80+ tests pass
+1. **Run tests** — Execute `ceedling test:all` and see 106 tests pass
 2. **Break something** — Change `CELL_X = 1` to `CELL_X = 5`. Which tests catch it?
 3. **Read test names** — Tests like `test_game_make_move_rejects_occupied_cell` document behavior
 4. **Trace a feature** — Follow how "winner picks symbol" is implemented across modules
+5. **Try the UI abstraction** — See how `ui_cli.c` implements `UserInterface` and imagine a GUI version
+6. **Change board size** — Set `BOARD_DIM` to 4 in `constants.h` and rebuild
 
 ---
 
@@ -230,10 +237,13 @@ display_result(winner);                   // Pure display
 - **Modules** replace monolithic files
 - **Data tables** replace copy-paste code
 
-### Level 2 → Level 3: Reliability
+### Level 2 → Level 3: Reliability & Abstraction
 - **Tests** prove code works
 - **Assertions** catch programmer errors
 - **NULL checks** prevent crashes
+- **UI abstraction** enables GUI without rewriting logic
+- **Configurable constants** enable board size changes
+- **Testable helpers** enable granular unit testing
 - **Documentation** enables teamwork
 
 ### The Real Lesson

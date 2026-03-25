@@ -13,16 +13,17 @@
 
 A modular, well-tested implementation of Tic-Tac-Toe in C, designed as a teaching project for software engineering principles. Features human vs computer gameplay with two difficulty levels, comprehensive unit tests, and clean separation of concerns.
 
-
 ## Project Purpose
 This project demonstrates:
-- **Modular C architecture** — Single responsibility focused source files
-- **Comprehensive testing** — Unit tests with 100% pass rate
-- **Clean API design** — Consistent naming, clear return values
+- **Modular C architecture** — 10 focused source files, each < 200 lines
+- **Comprehensive testing** — 100+ unit tests with 100% pass rate
+- **Clean API design** — consistent naming, clear return values
+- **UI abstraction** — swappable interface layer (CLI, GUI-ready)
+- **Configurable board size** — easily extend to 4x4 or larger boards
 - **Defensive programming** — NULL checks, bounds validation, assertions
-- **Refactoring techniques** — Before/after examples in the learning guide
+- **Refactoring techniques** — before/after examples in the learning guide
 
-## Tech Stack
+## 🛠️ Tech Stack
 | Component          | Technology        | Purpose                       |
 |--------------------|-------------------|-------------------------------|
 | **Language**       | C (C99)           | Core implementation           |
@@ -100,7 +101,7 @@ sudo apt-get install gcc
 git clone <repository-url>
 cd the-dreaded-c
 
-# Run all tests (84 tests)
+# Run all tests 
 ceedling test:all
 
 # Build the game
@@ -124,15 +125,11 @@ code or improvements.
 
 ```
 Board positions:
-   |   |   
- 0 | 1 | 2 
-___|___|___
-   |   |   
- 3 | 4 | 5 
-___|___|___
-   |   |   
- 6 | 7 | 8 
-   |   |    
+   0 | 1 | 2
+  -----------
+   3 | 4 | 5
+  -----------
+   6 | 7 | 8
 ```
 
 4. **Win conditions**: 3 in a row (horizontal, vertical, or diagonal)
@@ -141,30 +138,56 @@ ___|___|___
 
 ## Architecture
 ```
-┌─────────────────────────────────────────────────┐
-│  main.c  (entry point, user interaction)        │
-└─────────────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────────────────┐
-│  tictactoe.c  (game session coordinator)        │
-└─────────────────────────────────────────────────┘
-         │
-    ┌────┴────┬─────────────┬─────────────┐
-    ▼         ▼             ▼             ▼
-┌────────┐ ┌────────┐ ┌──────────┐ ┌──────────┐
-│board.c │ │ ai.c   │ │ai_easy.c │ │display.c │
-│ (data) │ │ (hard) │ │ (random) │ │ (output) │
-└────────┘ └────────┘ └──────────┘ └──────────┘
-    │           │           │
-    └─────┬─────┴───────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                        main.c                               │
+│                  (game loop & flow)                         │
+└─────────────────────────────────────────────────────────────┘
+                            │
+              ┌─────────────┴─────────────┐
+              ▼                           ▼
+┌──────────────────────────┐   ┌─────────────────────────────┐
+│     tictactoe.c          │   │     ui_interface.h          │
+│  (game session logic)    │   │   (UI abstraction layer)    │
+└──────────────────────────┘   └─────────────────────────────┘
+              │                           │
+    ┌─────────┼─────────┐        ┌────────┴────────┐
+    ▼         ▼         ▼        ▼                 ▼
+┌────────┐ ┌────────┐ ┌────────┐ ┌──────────┐ ┌──────────────┐
+│board.c │ │ ai.c   │ │ai_easy │ │ ui_cli.c │ │ui_gui_example│
+│ (data) │ │ (hard) │ │(random)│ │  (CLI)   │ │   (SDL2)     │
+└────────┘ └────────┘ └────────┘ └──────────┘ └──────────────┘
+    │           │          │
+    └─────┬─────┴──────────┘
           ▼
-┌─────────────────────────────────────────────────┐
-│  win_condition_calculator.c  (game rules)       │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│            win_condition_calculator.c                       │
+│  (game rules - configurable board size & win length)        │
+└─────────────────────────────────────────────────────────────┘
           │
           ▼
-┌─────────────────────────────────────────────────┐
-│  constants.h  (shared types and enums)          │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                      constants.h                            │
+│      (BOARD_DIM, BOARD_SIZE, WIN_LENGTH, types, enums)      │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+### Key Design Decisions
+
+**UI Abstraction Layer** (`ui_interface.h`)
+- Function pointer struct enables swapping CLI/GUI without changing game logic
+- `ui_cli.c` provides terminal-based implementation
+- `ui_gui_example.c` demonstrates SDL2 GUI implementation pattern
+
+**Configurable Board Size** (`constants.h`)
+```c
+#define BOARD_DIM 3              // Change to 4, 5, etc.
+#define BOARD_SIZE (BOARD_DIM * BOARD_DIM)
+#define WIN_LENGTH BOARD_DIM     // Symbols needed to win
+```
+
+**Win Condition Calculator** — Testable helper functions:
+- `wcc_check_rows()` — horizontal wins
+- `wcc_check_columns()` — vertical wins
+- `wcc_check_main_diagonals()` — top-left to bottom-right
+- `wcc_check_anti_diagonals()` — top-right to bottom-left
+

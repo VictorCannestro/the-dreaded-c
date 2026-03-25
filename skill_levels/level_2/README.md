@@ -81,6 +81,9 @@ This level fixes the major problems from Level 1:
 - ❌ Winner chooses symbol between games
 - ❌ NULL pointer checks / defensive programming
 - ❌ Multiple difficulty levels
+- ❌ UI abstraction layer (swappable CLI/GUI)
+- ❌ Configurable board size
+- ❌ Testable win detection helpers
 
 
 ## Learning Goals
@@ -103,6 +106,8 @@ After studying this level, you should be able to achieve the following:
 **Question to answer:** If you wanted to replace the terminal display with a GUI, how many files would you change? (Answer: Just `display.c` and `main.c` — game logic untouched!)
 
 **Compare with Level 1:** In Level 1, you'd have to modify almost EVERY line because display was tangled with logic.
+
+**Note:** Level 3 takes this further with a `UserInterface` abstraction layer. You implement a single interface struct and swap implementations without touching `main.c` at all!
 
 ---
 
@@ -409,14 +414,17 @@ Add a 4×4 board mode. Count how many lines change:
 
 ## Summary: Level 2 → Level 3 Improvements Needed
 
-| Level 2 Gap      | Level 3 Solution       | Why It Matters       |
-|------------------|------------------------|----------------------|
-| No tests         | 80+ unit tests         | Prove correctness    |
-| Random AI        | Minimax algorithm      | Unbeatable computer  |
-| No NULL checks   | Defensive programming  | Graceful failures    |
-| Basic docs       | Full API documentation | Team maintainability |
-| Simple Makefile  | Ceedling build system  | Professional tooling |
-| Missing features | Winner chooses symbol  | Full requirements    |
+| Level 2 Gap               | Level 3 Solution            | Why It Matters               |
+|---------------------------|-----------------------------|------------------------------|
+| No tests                  | 100+ unit tests             | Prove correctness            |
+| Random AI                 | Minimax algorithm           | Unbeatable computer          |
+| No NULL checks            | Defensive programming       | Graceful failures            |
+| Hardcoded printf          | `UserInterface` abstraction | Swap CLI/GUI without rewrite |
+| Hardcoded board size      | `BOARD_DIM` configurable    | Extend to 4x4, 5x5, etc.     |
+| Single win check function | Testable helpers            | `wcc_check_rows()`, etc.     |
+| Basic docs                | Full API documentation      | Team maintainability         |
+| Simple Makefile           | Ceedling build system       | Professional tooling         |
+| Missing features          | Winner chooses symbol       | Full requirements            |
 
 See the [root project README](../../README.md) for details.
 

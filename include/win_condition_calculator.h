@@ -3,11 +3,33 @@
 
 #include "constants.h"
 
-#define BOARD_SIZE 9
-#define NUM_WIN_COMBOS 8
+/*
+ * Check all rows for WIN_LENGTH symbols in a row.
+ * Returns the winning CellValue, or CELL_EMPTY if none.
+ */
+CellValue wcc_check_rows(const CellValue board[BOARD_SIZE]);
 
 /*
- * Scan the board for a three-in-a-row.
+ * Check all columns for WIN_LENGTH symbols in a row.
+ * Returns the winning CellValue, or CELL_EMPTY if none.
+ */
+CellValue wcc_check_columns(const CellValue board[BOARD_SIZE]);
+
+/*
+ * Check main diagonals (top-left to bottom-right) for WIN_LENGTH symbols.
+ * Returns the winning CellValue, or CELL_EMPTY if none.
+ */
+CellValue wcc_check_main_diagonals(const CellValue board[BOARD_SIZE]);
+
+/*
+ * Check anti-diagonals (top-right to bottom-left) for WIN_LENGTH symbols.
+ * Returns the winning CellValue, or CELL_EMPTY if none.
+ */
+CellValue wcc_check_anti_diagonals(const CellValue board[BOARD_SIZE]);
+
+/*
+ * Scan the board for WIN_LENGTH symbols in a row.
+ * Supports any board dimension defined by BOARD_DIM.
  * Returns the winning CellValue, or CELL_EMPTY if there is none.
  */
 CellValue wcc_check_winner(const CellValue board[BOARD_SIZE]);

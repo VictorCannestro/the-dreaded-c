@@ -9,6 +9,33 @@
 
 
 /* ------------------------------------------------------------------ */
+/* String Constants                                                    */
+/* ------------------------------------------------------------------ */
+static const char *MSG_X_WINS           = "*** Player X WINS! ***\n";
+static const char *MSG_O_WINS           = "*** Player O WINS! ***\n";
+static const char *MSG_DRAW             = "*** GAME DRAW ***\n";
+static const char *MSG_ONGOING          = "Game is ongoing...\n";
+
+static const char *PROMPT_POSITION      = "Enter position (0-%d): ";
+static const char *PROMPT_YES_NO_CHOICE = " (y/n): ";
+static const char *PROMPT_SYMBOL_CHOICE = " (X or O): ";
+static const char *PROMPT_DIFFICULTY    = "Choose difficulty - (e)asy or (h)ard: ";
+
+static const char *ERR_PREFIX           = "Error: %s\n";
+static const char *ERR_INVALID_NUMBER   = "Invalid input. Please enter a number between 0 and %d.\n";
+static const char *ERR_INVALID_MOVE     = "Invalid move! Position %d is already occupied or out of range.\n";
+static const char *ERR_INVALID_YES_NO   = "Please enter y or n.\n";
+static const char *ERR_INVALID_SYMBOL   = "Invalid choice. Please enter X or O.\n";
+static const char *ERR_INVALID_DIFF     = "Please enter e or h.\n";
+static const char *ERR_INVALID_INPUT_XO = "Invalid input. Please enter X or O.\n";
+
+static const char *BOARD_CELL_PADDING   = "   ";
+static const char *BOARD_CELL_SEPARATOR = "|";
+static const char *BOARD_CELL_FORMAT    = " %c ";
+static const char *BOARD_ROW_DIVIDER    = "___";
+
+
+/* ------------------------------------------------------------------ */
 /* Display Functions                                                   */
 /* ------------------------------------------------------------------ */
 static void cli_display_board(const GameState *state) {
@@ -21,9 +48,9 @@ static void cli_display_board(const GameState *state) {
     for (int row = 0; row < BOARD_DIM; row++) {
         /* Top padding row */
         for (int col = 0; col < BOARD_DIM; col++) {
-            printf("   ");
+            printf("%s", BOARD_CELL_PADDING);
             if (col < BOARD_DIM - 1) {
-                printf("|");
+                printf("%s", BOARD_CELL_SEPARATOR);
             }
         }
         printf("\n");
@@ -31,9 +58,9 @@ static void cli_display_board(const GameState *state) {
         /* Cell values row */
         for (int col = 0; col < BOARD_DIM; col++) {
             int pos = row * BOARD_DIM + col;
-            printf(" %c ", cell_value_to_marker(state->board[pos]));
+            printf(BOARD_CELL_FORMAT, cell_value_to_marker(state->board[pos]));
             if (col < BOARD_DIM - 1) {
-                printf("|");
+                printf("%s", BOARD_CELL_SEPARATOR);
             }
         }
         printf("\n");
@@ -41,12 +68,12 @@ static void cli_display_board(const GameState *state) {
         /* Bottom border row (or spacing for last row) */
         for (int col = 0; col < BOARD_DIM; col++) {
             if (row < BOARD_DIM - 1) {
-                printf("___");
+                printf("%s", BOARD_ROW_DIVIDER);
             } else {
-                printf("   ");
+                printf("%s", BOARD_CELL_PADDING);
             }
             if (col < BOARD_DIM - 1) {
-                printf("|");
+                printf("%s", BOARD_CELL_SEPARATOR);
             }
         }
         printf("\n");
@@ -59,16 +86,16 @@ static void cli_display_status(GameStatus status) {
     printf("\n");
     switch (status) {
         case X_WINS:
-            printf("*** Player X WINS! ***\n");
+            printf("%s", MSG_X_WINS);
             break;
         case O_WINS:
-            printf("*** Player O WINS! ***\n");
+            printf("%s", MSG_O_WINS);
             break;
         case DRAW:
-            printf("*** GAME DRAW ***\n");
+            printf("%s", MSG_DRAW);
             break;
         case ONGOING:
-            printf("Game is ongoing...\n");
+            printf("%s", MSG_ONGOING);
             break;
     }
     printf("\n");
@@ -86,7 +113,7 @@ static void cli_display_formatted(const char *format, ...) {
 }
 
 static void cli_display_error(const char *message) {
-    printf("Error: %s\n", message);
+    printf(ERR_PREFIX, message);
 }
 
 
@@ -101,17 +128,17 @@ static void cli_clear_input_buffer(void) {
 static int cli_get_move(GameState *game) {
     int position;
     while (1) {
-        printf("Enter position (0-%d): ", BOARD_SIZE - 1);
+        printf(PROMPT_POSITION, BOARD_SIZE - 1);
         if (scanf("%d", &position) != 1) {
             cli_clear_input_buffer();
-            printf("Invalid input. Please enter a number between 0 and %d.\n", BOARD_SIZE - 1);
+            printf(ERR_INVALID_NUMBER, BOARD_SIZE - 1);
             continue;
         }
 
         if (game_is_valid_move(game, position)) {
             return position;
         } else {
-            printf("Invalid move! Position %d is already occupied or out of range.\n", position);
+            printf(ERR_INVALID_MOVE, position);
         }
     }
 }
@@ -119,7 +146,7 @@ static int cli_get_move(GameState *game) {
 static int cli_get_yes_no(const char *prompt) {
     char choice;
     while (1) {
-        printf("%s (y/n): ", prompt);
+        printf("%s%s", prompt, PROMPT_YES_NO_CHOICE);
         if (scanf(" %c", &choice) != 1) {
             cli_clear_input_buffer();
             continue;
@@ -132,7 +159,7 @@ static int cli_get_yes_no(const char *prompt) {
         if (choice == 'n') {
             return 0;
         }
-        printf("Please enter y or n.\n");
+        printf("%s", ERR_INVALID_YES_NO);
         cli_clear_input_buffer();
     }
 }
@@ -140,10 +167,10 @@ static int cli_get_yes_no(const char *prompt) {
 static CellValue cli_get_symbol_choice(const char *prompt) {
     char choice;
     while (1) {
-        printf("%s (X or O): ", prompt);
+        printf("%s%s", prompt, PROMPT_SYMBOL_CHOICE);
         if (scanf(" %c", &choice) != 1) {
             cli_clear_input_buffer();
-            printf("Invalid input. Please enter X or O.\n");
+            printf("%s", ERR_INVALID_INPUT_XO);
             continue;
         }
 
@@ -153,7 +180,7 @@ static CellValue cli_get_symbol_choice(const char *prompt) {
         } else if (choice == O_MARKER) {
             return CELL_O;
         } else {
-            printf("Invalid choice. Please enter X or O.\n");
+            printf("%s", ERR_INVALID_SYMBOL);
             cli_clear_input_buffer();
         }
     }
@@ -162,7 +189,7 @@ static CellValue cli_get_symbol_choice(const char *prompt) {
 static Difficulty cli_get_difficulty(void) {
     char choice;
     while (1) {
-        printf("Choose difficulty - (e)asy or (h)ard: ");
+        printf("%s", PROMPT_DIFFICULTY);
         if (scanf(" %c", &choice) != 1) {
             cli_clear_input_buffer();
             continue;
@@ -175,7 +202,7 @@ static Difficulty cli_get_difficulty(void) {
         if (choice == 'h') {
             return DIFFICULTY_HARD;
         }
-        printf("Please enter e or h.\n");
+        printf("%s", ERR_INVALID_DIFF);
         cli_clear_input_buffer();
     }
 }

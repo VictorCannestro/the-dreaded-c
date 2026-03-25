@@ -75,6 +75,29 @@ This creates a visually balanced grid where markers are centered and easy to rea
 
 ## Complete Implementation
 
+### String Constants
+
+The board display uses four named constants to avoid magic strings and improve maintainability:
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `BOARD_CELL_PADDING` | `"   "` | Empty padding for cell width (3 spaces) |
+| `BOARD_CELL_SEPARATOR` | `"\|"` | Vertical separator between cells |
+| `BOARD_CELL_FORMAT` | `" %c "` | Format string for cell values (centered marker) |
+| `BOARD_ROW_DIVIDER` | `"___"` | Horizontal divider between rows (3 underscores) |
+
+These constants are defined alongside other UI string constants in `ui_cli.c`:
+
+```c
+/* String Constants for Board Display */
+static const char *BOARD_CELL_PADDING   = "   ";
+static const char *BOARD_CELL_SEPARATOR = "|";
+static const char *BOARD_CELL_FORMAT    = " %c ";
+static const char *BOARD_ROW_DIVIDER    = "___";
+```
+
+### Function Implementation
+
 ```c
 static void cli_display_board(const GameState *state) {
     if (state == NULL) {
@@ -86,27 +109,33 @@ static void cli_display_board(const GameState *state) {
     for (int row = 0; row < BOARD_DIM; row++) {
         /* Top padding row */
         for (int col = 0; col < BOARD_DIM; col++) {
-            printf("   ");
-            if (col < BOARD_DIM - 1) printf("|");
+            printf("%s", BOARD_CELL_PADDING);
+            if (col < BOARD_DIM - 1) {
+                printf("%s", BOARD_CELL_SEPARATOR);
+            }
         }
         printf("\n");
 
         /* Cell values row */
         for (int col = 0; col < BOARD_DIM; col++) {
             int pos = row * BOARD_DIM + col;
-            printf(" %c ", cell_value_to_marker(state->board[pos]));
-            if (col < BOARD_DIM - 1) printf("|");
+            printf(BOARD_CELL_FORMAT, cell_value_to_marker(state->board[pos]));
+            if (col < BOARD_DIM - 1) {
+                printf("%s", BOARD_CELL_SEPARATOR);
+            }
         }
         printf("\n");
 
         /* Bottom border row (or spacing for last row) */
         for (int col = 0; col < BOARD_DIM; col++) {
             if (row < BOARD_DIM - 1) {
-                printf("___");
+                printf("%s", BOARD_ROW_DIVIDER);
             } else {
-                printf("   ");
+                printf("%s", BOARD_CELL_PADDING);
             }
-            if (col < BOARD_DIM - 1) printf("|");
+            if (col < BOARD_DIM - 1) {
+                printf("%s", BOARD_CELL_SEPARATOR);
+            }
         }
         printf("\n");
     }
@@ -136,8 +165,10 @@ for (int row = 0; row < BOARD_DIM; row++) {
 ### Step 3: Top Padding Row
 ```c
 for (int col = 0; col < BOARD_DIM; col++) {
-    printf("   ");                        // 3 spaces for cell width
-    if (col < BOARD_DIM - 1) printf("|"); // Vertical separator
+    printf("%s", BOARD_CELL_PADDING);             // 3 spaces for cell width
+    if (col < BOARD_DIM - 1) {
+        printf("%s", BOARD_CELL_SEPARATOR);       // Vertical separator
+    }
 }
 printf("\n");
 ```
@@ -156,8 +187,10 @@ printf("\n");
 ```c
 for (int col = 0; col < BOARD_DIM; col++) {
     int pos = row * BOARD_DIM + col;      // 2D → 1D index conversion
-    printf(" %c ", cell_value_to_marker(state->board[pos]));
-    if (col < BOARD_DIM - 1) printf("|");
+    printf(BOARD_CELL_FORMAT, cell_value_to_marker(state->board[pos]));
+    if (col < BOARD_DIM - 1) {
+        printf("%s", BOARD_CELL_SEPARATOR);
+    }
 }
 printf("\n");
 ```
@@ -196,11 +229,13 @@ char cell_value_to_marker(CellValue cell) {
 ```c
 for (int col = 0; col < BOARD_DIM; col++) {
     if (row < BOARD_DIM - 1) {
-        printf("___");    // Underscores for grid lines
+        printf("%s", BOARD_ROW_DIVIDER);    // Underscores for grid lines
     } else {
-        printf("   ");    // Spaces for last row (clean bottom edge)
+        printf("%s", BOARD_CELL_PADDING);   // Spaces for last row (clean bottom edge)
     }
-    if (col < BOARD_DIM - 1) printf("|");
+    if (col < BOARD_DIM - 1) {
+        printf("%s", BOARD_CELL_SEPARATOR);
+    }
 }
 printf("\n");
 ```
@@ -217,6 +252,7 @@ printf("\n");
 
 | Decision | Rationale |
 |----------|-----------|
+| **String constants** (`BOARD_CELL_PADDING`, etc.) | Centralizes display strings for easy modification and consistency |
 | **3-character cell width** (`" X "`) | Centers the marker with padding for readability |
 | **Conditional separators** (`if col < BOARD_DIM - 1`) | Prevents trailing `\|` at end of each line |
 | **Conditional bottom border** (`if row < BOARD_DIM - 1`) | Clean visual edge—no dangling underscores |

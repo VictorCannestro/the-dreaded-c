@@ -7,10 +7,10 @@ This guide explains the key C concepts and software engineering practices used i
 ### Core C Concepts
 1. [Basic Types](#basic-types)
 2. [Enums](#enums)
-3. [Structs](#structs)
-4. [Arrays](#arrays)
-5. [Pointers](#pointers)
-6. [Functions](#functions)
+3. [Pointers](#pointers)
+4. [Functions](#functions)
+5. [Arrays](#arrays)
+6. [Structs](#structs)
 7. [Header Files](#header-files)
 8. [Function Pointers and Abstraction](#function-pointers-and-abstraction)
 9. [Memory Management](#memory-management)
@@ -144,186 +144,6 @@ PlayerType game_get_player_type(GameState *state, CellValue symbol) {
 ```
 
 See [include/constants.h](include/constants.h) for all enum definitions.
-
----
-
-## Structs
-
-A `struct` (structure) groups related data together into a single unit. Think of it as a custom type that bundles multiple variables.
-
-### Syntax
-
-```c
-typedef struct {
-    int x;
-    int y;
-} Point;
-
-Point p;       // Declare a Point variable
-p.x = 10;      // Access members with dot notation
-p.y = 20;
-```
-
-### Structs in This Project
-
-**Player** - Who is playing (human or computer)?
-```c
-typedef struct {
-    PlayerType type;    // PLAYER_HUMAN or PLAYER_COMPUTER
-    CellValue symbol;   // CELL_X or CELL_O
-} Player;
-```
-
-**GameState** - Everything about the current game:
-```c
-typedef struct {
-    CellValue board[BOARD_SIZE]; // The NxN board (configurable size)
-    GameStatus status;           // ONGOING, X_WINS, O_WINS, or DRAW
-    int move_count;              // How many moves made
-    Player players[2];           // players[0]=X, players[1]=O
-    int game_count;              // Which game number in session
-    CellValue last_winner;       // Who won the previous game
-    Difficulty difficulty;       // DIFFICULTY_EASY or DIFFICULTY_HARD
-} GameState;
-```
-
-### Accessing Struct Members
-
-**Direct access** (when you have the struct itself):
-```c
-GameState game;
-game.move_count = 0;
-game.board[4] = CELL_X;
-```
-
-**Pointer access** (when you have a pointer to the struct):
-```c
-GameState *state = &game;
-state->move_count = 0;      // Arrow notation for pointers
-state->board[4] = CELL_X;
-
-// Equivalent but more verbose:
-(*state).move_count = 0;
-```
-
-### Nested Structs
-
-Structs can contain other structs:
-```c
-// GameState contains an array of Player structs
-state->players[0].type = PLAYER_HUMAN;
-state->players[0].symbol = CELL_X;
-state->players[1].type = PLAYER_COMPUTER;
-state->players[1].symbol = CELL_O;
-```
-
-### Why Use Structs?
-
-1. **Organization** - Related data stays together
-2. **Pass to functions easily** - One parameter instead of many
-3. **Return multiple values** - Return a struct with all results
-4. **Self-documenting** - Field names explain what data means
-
-See [include/tictactoe.h](include/tictactoe.h) for struct definitions.
-
----
-
-## Arrays
-
-Arrays store multiple values of the same type in contiguous memory.
-
-### Declaring and Using Arrays
-
-```c
-int numbers[5];          // Array of 5 integers (indices 0-4)
-numbers[0] = 10;         // First element
-numbers[4] = 50;         // Last element (NOT numbers[5]!)
-
-// Initialize at declaration
-int primes[] = {2, 3, 5, 7, 11};  // Size inferred: 5 elements
-```
-
-### ⚠️ Critical: Arrays Are 0-Indexed!
-
-```
-Index:    [0]  [1]  [2]  [3]  [4]
-Values:    10   20   30   40   50
-```
-
-- First element: `array[0]`
-- Last element of size-N array: `array[N-1]`
-- `array[N]` is **OUT OF BOUNDS** (undefined behavior!)
-
-### The Board: 1D Array as 2D Grid
-
-Our tic-tac-toe board uses a **linear array** to represent a grid:
-
-```c
-// constants.h - Configurable board size
-#define BOARD_DIM 3                         // Change to 4, 5, etc.
-#define BOARD_SIZE (BOARD_DIM * BOARD_DIM)  // 9 for 3x3, 16 for 4x4
-#define WIN_LENGTH BOARD_DIM                // Symbols needed to win
-
-// tictactoe.h
-CellValue board[BOARD_SIZE];  // Uses the constant
-
-// Visual mapping for 3x3:
-//   board[0] | board[1] | board[2]
-//   ---------+----------+---------
-//   board[3] | board[4] | board[5]
-//   ---------+----------+---------
-//   board[6] | board[7] | board[8]
-```
-
-**Converting row/column to index:**
-```c
-int position = row * BOARD_DIM + col;
-
-// Examples (3x3 board):
-// (0,0) → 0*3+0 = 0  (top-left)
-// (1,1) → 1*3+1 = 4  (center)
-// (2,2) → 2*3+2 = 8  (bottom-right)
-```
-
-**Why configurable?** Change `BOARD_DIM` to 4 and rebuild — the entire game adapts to a 4x4 board!
-
-### Arrays and Pointers
-
-When passed to functions, arrays "decay" to pointers:
-
-```c
-void clear_board(CellValue board[9]) {
-    // board is actually a pointer here!
-    for (int i = 0; i < 9; i++) {
-        board[i] = CELL_EMPTY;
-    }
-}
-
-// These declarations are equivalent for parameters:
-void func1(int arr[9]);   // Looks like array
-void func2(int arr[]);    // Size optional
-void func3(int *arr);     // Actually a pointer
-```
-
-### Common Array Operations
-
-```c
-// Iterate over all elements
-for (int i = 0; i < BOARD_SIZE; i++) {
-    if (board[i] == CELL_EMPTY) {
-        // Found empty cell
-    }
-}
-
-// Fill with a value (for single-byte values like 0)
-#include <string.h>
-memset(board, 0, sizeof(board));
-
-// Copy an array
-memcpy(destination, source, sizeof(source));
-```
-
-See [src/board.c](src/board.c) for array operations.
 
 ---
 
@@ -596,6 +416,187 @@ See [include/tictactoe.h](include/tictactoe.h) for function declarations.
 
 ---
 
+## Arrays
+
+Arrays store multiple values of the same type in contiguous memory.
+
+### Declaring and Using Arrays
+
+```c
+int numbers[5];          // Array of 5 integers (indices 0-4)
+numbers[0] = 10;         // First element
+numbers[4] = 50;         // Last element (NOT numbers[5]!)
+
+// Initialize at declaration
+int primes[] = {2, 3, 5, 7, 11};  // Size inferred: 5 elements
+```
+
+### ⚠️ Critical: Arrays Are 0-Indexed!
+
+```
+Index:    [0]  [1]  [2]  [3]  [4]
+Values:    10   20   30   40   50
+```
+
+- First element: `array[0]`
+- Last element of size-N array: `array[N-1]`
+- `array[N]` is **OUT OF BOUNDS** (undefined behavior!)
+
+### The Board: 1D Array as 2D Grid
+
+Our tic-tac-toe board uses a **linear array** to represent a grid:
+
+```c
+// constants.h - Configurable board size
+#define BOARD_DIM 3                         // Change to 4, 5, etc.
+#define BOARD_SIZE (BOARD_DIM * BOARD_DIM)  // 9 for 3x3, 16 for 4x4
+#define WIN_LENGTH BOARD_DIM                // Symbols needed to win
+
+// tictactoe.h
+CellValue board[BOARD_SIZE];  // Uses the constant
+
+// Visual mapping for 3x3:
+//   board[0] | board[1] | board[2]
+//   ---------+----------+---------
+//   board[3] | board[4] | board[5]
+//   ---------+----------+---------
+//   board[6] | board[7] | board[8]
+```
+
+**Converting row/column to index:**
+```c
+int position = row * BOARD_DIM + col;
+
+// Examples (3x3 board):
+// (0,0) → 0*3+0 = 0  (top-left)
+// (1,1) → 1*3+1 = 4  (center)
+// (2,2) → 2*3+2 = 8  (bottom-right)
+```
+
+**Why configurable?** Change `BOARD_DIM` to 4 and rebuild — the entire game adapts to a 4x4 board!
+
+### Arrays and Pointers
+
+When passed to functions, arrays "decay" to pointers:
+
+```c
+void clear_board(CellValue board[9]) {
+    // board is actually a pointer here!
+    for (int i = 0; i < 9; i++) {
+        board[i] = CELL_EMPTY;
+    }
+}
+
+// These declarations are equivalent for parameters:
+void func1(int arr[9]);   // Looks like array
+void func2(int arr[]);    // Size optional
+void func3(int *arr);     // Actually a pointer
+```
+
+### Common Array Operations
+
+```c
+// Iterate over all elements
+for (int i = 0; i < BOARD_SIZE; i++) {
+    if (board[i] == CELL_EMPTY) {
+        // Found empty cell
+    }
+}
+
+// Fill with a value (for single-byte values like 0)
+#include <string.h>
+memset(board, 0, sizeof(board));
+
+// Copy an array
+memcpy(destination, source, sizeof(source));
+```
+
+See [src/board.c](src/board.c) for array operations.
+
+---
+
+## Structs
+
+A `struct` (structure) groups related data together into a single unit. Think of it as a custom type that bundles multiple variables.
+
+### Syntax
+
+```c
+typedef struct {
+    int x;
+    int y;
+} Point;
+
+Point p;       // Declare a Point variable
+p.x = 10;      // Access members with dot notation
+p.y = 20;
+```
+
+### Structs in This Project
+
+**Player** - Who is playing (human or computer)?
+```c
+typedef struct {
+    PlayerType type;    // PLAYER_HUMAN or PLAYER_COMPUTER
+    CellValue symbol;   // CELL_X or CELL_O
+} Player;
+```
+
+**GameState** - Everything about the current game:
+```c
+typedef struct {
+    CellValue board[BOARD_SIZE]; // The NxN board (configurable size)
+    GameStatus status;           // ONGOING, X_WINS, O_WINS, or DRAW
+    int move_count;              // How many moves made
+    Player players[2];           // players[0]=X, players[1]=O
+    int game_count;              // Which game number in session
+    CellValue last_winner;       // Who won the previous game
+    Difficulty difficulty;       // DIFFICULTY_EASY or DIFFICULTY_HARD
+} GameState;
+```
+
+### Accessing Struct Members
+
+**Direct access** (when you have the struct itself):
+```c
+GameState game;
+game.move_count = 0;
+game.board[4] = CELL_X;
+```
+
+**Pointer access** (when you have a pointer to the struct):
+```c
+GameState *state = &game;
+state->move_count = 0;      // Arrow notation for pointers
+state->board[4] = CELL_X;
+
+// Equivalent but more verbose:
+(*state).move_count = 0;
+```
+
+### Nested Structs
+
+Structs can contain other structs:
+```c
+// GameState contains an array of Player structs
+state->players[0].type = PLAYER_HUMAN;
+state->players[0].symbol = CELL_X;
+state->players[1].type = PLAYER_COMPUTER;
+state->players[1].symbol = CELL_O;
+```
+
+### Why Use Structs?
+
+1. **Organization** - Related data stays together
+2. **Pass to functions easily** - One parameter instead of many
+3. **Return multiple values** - Return a struct with all results
+4. **Self-documenting** - Field names explain what data means
+
+See [include/tictactoe.h](include/tictactoe.h) for struct definitions.
+
+---
+
+
 ## Header Files
 
 C code is split into two types of files:
@@ -849,6 +850,7 @@ For a detailed breakdown of how `cli_display_board` renders the game board dynam
 
 Topics covered:
 - Visual output examples (3x3 and 4x4 boards)
+- String constants for board display (`BOARD_CELL_PADDING`, `BOARD_CELL_SEPARATOR`, etc.)
 - Step-by-step code breakdown
 - 2D to 1D index conversion formula
 - Key design decisions and rationale
@@ -1961,6 +1963,7 @@ A **code smell** is a pattern that suggests something might be wrong. Not necess
 | Copy-pasted code                 | Missing abstraction                  |
 | Lots of `if/else` chains         | Missing polymorphism or lookup table |
 | Magic numbers everywhere         | Missing named constants              |
+| Magic strings everywhere         | Missing string constants             |
 | Caller manipulates struct fields | Incomplete API                       |
 | Comments explaining tricky code  | Code should be clearer               |
 
@@ -1990,7 +1993,53 @@ for (int i = 0; i < BOARD_SIZE; i++) {
 
 **Why it matters:** When you need to change the board size, you change ONE place, not 47.
 
-### Smell 2: God Function
+### Smell 2: Magic Strings
+**Symptom:** Unexplained string literals scattered throughout code
+
+```c
+// ❌ What if we want to change the error message format?
+printf("Invalid input. Please enter a number between 0 and %d.\n", max);
+// ... later in the same file ...
+printf("Invalid input. Please enter X or O.\n");
+// ... and more scattered printf calls with similar strings ...
+```
+
+**Fix:** Extract named string constants at the top of the file
+
+```c
+// ✅ All strings in one place, categorized by purpose
+static const char *ERR_INVALID_NUMBER   = "Invalid input. Please enter a number between 0 and %d.\n";
+static const char *ERR_INVALID_INPUT_XO = "Invalid input. Please enter X or O.\n";
+static const char *ERR_INVALID_MOVE     = "Invalid move! Position %d is already occupied or out of range.\n";
+
+static const char *MSG_X_WINS           = "*** Player X WINS! ***\n";
+static const char *MSG_O_WINS           = "*** Player O WINS! ***\n";
+static const char *MSG_DRAW             = "*** GAME DRAW ***\n";
+
+static const char *BOARD_CELL_PADDING   = "   ";
+static const char *BOARD_CELL_SEPARATOR = "|";
+
+// Usage:
+printf(ERR_INVALID_NUMBER, max);
+printf("%s", BOARD_CELL_SEPARATOR);
+```
+
+**Why it matters:**
+- **Single source of truth:** Change a message in ONE place
+- **Self-documenting:** `ERR_INVALID_MOVE` explains what it is
+- **Categorization:** Prefixes (`ERR_`, `MSG_`, `PROMPT_`) group related strings
+- **Localization-ready:** Easy to swap strings for different languages
+- **Typo prevention:** Compiler catches misspelled constant names
+
+**Naming conventions used in this project:**
+| Prefix | Purpose | Example |
+|--------|---------|---------|
+| `MSG_` | Status/result messages | `MSG_X_WINS`, `MSG_DRAW` |
+| `PROMPT_` | User input prompts | `PROMPT_POSITION`, `PROMPT_DIFFICULTY` |
+| `ERR_` | Error messages | `ERR_INVALID_MOVE`, `ERR_INVALID_NUMBER` |
+| `BOARD_` | Board display elements | `BOARD_CELL_PADDING`, `BOARD_ROW_DIVIDER` |
+
+### Smell 3: God Function
 **Symptom:** A function that does too many things
 
 ```c
@@ -2031,7 +2080,7 @@ static void update_status(GameState *state) {
 }
 ```
 
-### Smell 3: Leaking Abstraction
+### Smell 4: Leaking Abstraction
 **Symptom:** Caller has to know internal rules to use the API
 
 ```c
@@ -2057,7 +2106,7 @@ game_set_winner_symbol_choice(&game, choice);
 
 **Rule:** If callers need to touch struct fields directly, your API is incomplete.
 
-### Smell 4: Duplicated Logic
+### Smell 5: Duplicated Logic
 **Symptom:** Same code pattern appears in multiple places
 
 ```c
@@ -2084,7 +2133,7 @@ CellValue winner = wcc_check_winner(state->board);
 CellValue winner = wcc_check_winner(board);
 ```
 
-### Smell 5: Silent Failure
+### Smell 6: Silent Failure
 **Symptom:** Errors are hidden instead of reported
 
 ```c

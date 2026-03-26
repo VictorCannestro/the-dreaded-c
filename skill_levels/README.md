@@ -12,7 +12,6 @@ This progression demonstrates how software engineering practices evolve as devel
 
 By studying each level, you'll understand *why* best practices exist—not just *what* they are.
 
----
 
 ## Skill Level Overview
 
@@ -22,7 +21,37 @@ By studying each level, you'll understand *why* best practices exist—not just 
 | Level 2 | Modular            | Separate files, enums, structs                 | Random  | None     | ~350 (14 files)  |
 | Level 3 | _(Root Directory)_ | UI abstraction, configurable board, 100+ tests | Minimax | Ceedling | ~900 (20+ files) |
 
----
+
+## Directory Structure
+
+```
+skill_levels/
+├── README.md           # This file
+├── level_1/
+│   ├── tictactoe.c     # Everything in one file (~200 lines)
+│   ├── Makefile        # Simple: gcc -o tictactoe tictactoe.c
+│   └── README.md       # Documents the anti-patterns
+└── level_2/
+    ├── include/        # Header files (API contracts)
+    │   ├── types.h     # Enums and structs
+    │   ├── board.h     # Board operations
+    │   ├── game.h      # Game state management
+    │   ├── display.h   # Output functions
+    │   ├── input.h     # User input
+    │   └── ai.h        # Computer player
+    ├── src/            # Implementation files
+    │   ├── main.c      # Thin coordinator
+    │   ├── board.c     # Board logic
+    │   ├── game.c      # Game flow
+    │   ├── display.c   # Printf calls
+    │   ├── input.c     # Scanf + validation
+    │   └── ai.c        # Random moves
+    ├── Makefile        # Compiles all sources
+    └── README.md       # Explains improvements + Level 1 problems
+```
+
+Level 3 (best-practice implementation) is in the root project directory (parent of `skill_levels/`).
+
 
 ## Learning Path
 ### 🔴 Level 1 - "The First Attempt"
@@ -127,7 +156,7 @@ The full implementation with:
 | Build system            | Basic   | Makefile | Ceedling |
 | CI/CD ready             | ❌       | ❌        | ✅        |
 
----
+
 
 ## Code Smells Deep Dive
 ### What's Wrong with Level 1?
@@ -206,7 +235,6 @@ display_result(winner);                   // Pure display
 ```
 **Problem:** Want a GUI instead of terminal? Rewrite everything.
 
----
 
 ## Exercises
 ### After Level 1:
@@ -228,7 +256,6 @@ display_result(winner);                   // Pure display
 5. **Try the UI abstraction** — See how `ui_cli.c` implements `UserInterface` and imagine a GUI version
 6. **Change board size** — Set `BOARD_DIM` to 4 in `constants.h` and rebuild
 
----
 
 ## Key Takeaways
 ### Level 1 → Level 2: Organization
@@ -249,42 +276,8 @@ display_result(winner);                   // Pure display
 ### The Real Lesson
 > "Working code" is the minimum bar. Professional code is **understandable**, **testable**, and **maintainable**.
 
----
-
-## Directory Structure
-
-```
-skill_levels/
-├── README.md           # This file
-├── level_1/
-│   ├── tictactoe.c     # Everything in one file (~200 lines)
-│   ├── Makefile        # Simple: gcc -o tictactoe tictactoe.c
-│   └── README.md       # Documents the anti-patterns
-└── level_2/
-    ├── include/        # Header files (API contracts)
-    │   ├── types.h     # Enums and structs
-    │   ├── board.h     # Board operations
-    │   ├── game.h      # Game state management
-    │   ├── display.h   # Output functions
-    │   ├── input.h     # User input
-    │   └── ai.h        # Computer player
-    ├── src/            # Implementation files
-    │   ├── main.c      # Thin coordinator
-    │   ├── board.c     # Board logic
-    │   ├── game.c      # Game flow
-    │   ├── display.c   # Printf calls
-    │   ├── input.c     # Scanf + validation
-    │   └── ai.c        # Random moves
-    ├── Makefile        # Compiles all sources
-    └── README.md       # Explains improvements + Level 1 problems
-```
-
-Level 3 (best-practice implementation) is in the root project directory (parent of `skill_levels/`).
-
----
 
 ## Further Reading
-
 - [Level 2 README](level_2/README.md) — Deep dive into why Level 1 practices are problematic
 - [Learning Guide](../docs/language_learning_guides/LEARNING_GUIDE.md) — Core C concepts explained
 - [Requirements](../docs/REQUIREMENTS.md) — Full game specification

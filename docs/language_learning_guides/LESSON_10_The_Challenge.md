@@ -559,21 +559,7 @@ void snake_render(SDL_Renderer *renderer, const SnakeContext *ctx);
 - [ ] All `static` functions remain private to their module
 - [ ] Include guards in every header
 
-#### Bonus: Add a Makefile
-```makefile
-CC = gcc
-CFLAGS = -Wall -Wextra -Iinclude $(shell sdl3-config --cflags)
-LDFLAGS = $(shell sdl3-config --libs)
-
-SRCS = src/main.c src/snake_game.c src/snake_input.c src/snake_renderer.c
-OBJS = $(SRCS:.c=.o)
-
-snake: $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
-
-clean:
-	rm -f $(OBJS) snake
-```
+#### Bonus: Add a Makefile or CMake build
 
 This challenge teaches you **the same skills used in the Tic-Tac-Toe project** — where we separated 
 `board.c`, `tictactoe.c`, `ui_cli.c`, and `win_condition_calculator.c` into focused modules.

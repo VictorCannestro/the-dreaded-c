@@ -6,6 +6,7 @@ This document provides guidelines and information for contributors.
 
 - [Development Environment Setup](#development-environment-setup)
 - [Building and Testing](#building-and-testing)
+- [Enabling the GUI (Optional)](#enabling-the-gui-optional)
 - [Development Workflow](#development-workflow)
 - [Code Standards](#code-standards)
 - [Testing Guidelines](#testing-guidelines)
@@ -17,7 +18,7 @@ This document provides guidelines and information for contributors.
 
 Choose your preferred development environment:
 
-### 🚀 Option 1: Docker Container (Recommended)
+### Option 1: Docker Container (Recommended)
 
 No installation required! Everything runs in a pre-configured container.
 
@@ -81,7 +82,7 @@ docker-compose run --rm dev ceedling clean
 docker-compose run --rm dev bash
 ```
 
-### 💻 Option 2: Local Development
+### Option 2: Local Development
 
 If you prefer to install tools locally, choose your platform below.
 
@@ -179,6 +180,76 @@ IGNORED:  0
 ceedling release
 ./build/release/tictactoe.exe  # All platforms (Linux/macOS/Windows)
 ```
+
+## Enabling the GUI (Optional)
+
+The project includes an example SDL2-based GUI (`src/ui_gui_example.c`) that is **not compiled by default**. It is guarded by a preprocessor flag and serves as a reference for implementing a graphical frontend using the `UIInterface` abstraction.
+
+### Prerequisites
+
+Install SDL2 and SDL2_ttf:
+
+**macOS:**
+```bash
+brew install sdl2 sdl2_ttf
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get install libsdl2-dev libsdl2-ttf-dev
+```
+
+### Enable `USE_GUI` in `project.yml`
+
+Add `USE_GUI` to the `:defines: :release:` section:
+
+```yaml
+:defines:
+  :test:
+    - TEST
+  :release:
+    - USE_GUI
+```
+
+### Add Linker Flags
+
+Add the SDL2 link flags to `:flags: :release: :link:` in `project.yml`:
+
+```yaml
+:flags:
+  :release:
+    :compile:
+      - -std=c99
+      - -Wall
+      - -Wextra
+      - -O2
+    :link:
+      - -lSDL2
+      - -lSDL2_ttf
+```
+
+### Switch to the GUI Interface
+
+In `src/main.c`, replace the CLI interface with the GUI one:
+
+```c
+// Before:
+UserInterface *ui = ui_get_cli_interface();
+
+// After:
+UserInterface *ui = ui_get_gui_interface();
+```
+
+Then rebuild:
+
+```bash
+ceedling release
+./build/release/tictactoe.exe
+```
+
+> **Note:** The GUI example uses SDL2 but the `UIInterface` abstraction supports any framework (GTK, Qt, ncurses, etc.). See `src/ui_gui_example.c` for the full implementation reference.
+
+---
 
 ## Development Workflow
 ### Making Changes

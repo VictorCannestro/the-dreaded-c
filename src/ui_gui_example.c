@@ -11,7 +11,6 @@
  * 3. Link with -lSDL2 -lSDL2_ttf
  * 4. Call ui_get_gui_interface() instead of ui_get_cli_interface()
  */
-
 #ifdef USE_GUI  /* Only compile when GUI is enabled */
 
 #include "ui_interface.h"
@@ -22,10 +21,10 @@
 #include <SDL2/SDL_ttf.h>
 #include <stdio.h>
 
+
 /* ------------------------------------------------------------------ */
 /* GUI State                                                           */
 /* ------------------------------------------------------------------ */
-
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
 static TTF_Font *font = NULL;
@@ -35,10 +34,10 @@ static int waiting_for_input = 0;
 #define WINDOW_SIZE 600
 #define CELL_SIZE (WINDOW_SIZE / 3)
 
+
 /* ------------------------------------------------------------------ */
 /* GUI Initialization                                                  */
 /* ------------------------------------------------------------------ */
-
 static int gui_init(void) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "SDL Init failed: %s\n", SDL_GetError());
@@ -63,10 +62,10 @@ static int gui_init(void) {
     return 0;
 }
 
+
 /* ------------------------------------------------------------------ */
 /* Display Functions                                                   */
 /* ------------------------------------------------------------------ */
-
 static void gui_display_board(const GameState *state) {
     if (state == NULL || renderer == NULL) return;
 
@@ -156,10 +155,10 @@ static void gui_display_error(const char *message) {
     );
 }
 
+
 /* ------------------------------------------------------------------ */
 /* Input Functions                                                     */
 /* ------------------------------------------------------------------ */
-
 static int gui_get_move(GameState *game) {
     pending_move = -1;
     waiting_for_input = 1;
@@ -254,10 +253,10 @@ static Difficulty gui_get_difficulty(void) {
     return (Difficulty)buttonid;
 }
 
+
 /* ------------------------------------------------------------------ */
 /* Interface Instance                                                  */
 /* ------------------------------------------------------------------ */
-
 static UserInterface gui_interface = {
     .display_board     = gui_display_board,
     .display_status    = gui_display_status,

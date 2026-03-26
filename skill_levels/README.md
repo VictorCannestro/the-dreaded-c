@@ -286,7 +286,7 @@ Level 3 (best-practice implementation) is in the root project directory (parent 
 ## Further Reading
 
 - [Level 2 README](level_2/README.md) — Deep dive into why Level 1 practices are problematic
-- [Learning Guide](../docs/LEARNING_GUIDE.md) — Core C concepts explained
+- [Learning Guide](../docs/language_learning_guides/LEARNING_GUIDE.md) — Core C concepts explained
 - [Requirements](../docs/REQUIREMENTS.md) — Full game specification
 - [Minimax Algorithm](../docs/algorithms/MINIMAX_ALGORITHM.md) — How the unbeatable AI works
 

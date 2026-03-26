@@ -11,17 +11,22 @@
              ░                           ░                                     
 ```
 
-A modular, well-tested implementation of Tic-Tac-Toe in C, designed as a teaching project for software engineering principles. Features human vs computer gameplay with two difficulty levels, comprehensive unit tests, and clean separation of concerns.
+A modular, well-tested implementation of Tic-Tac-Toe in C, designed as a teaching project for software engineering 
+principles. Features human vs computer gameplay with two difficulty levels, comprehensive unit tests, and clean 
+separation of concerns.
+
 
 ## Project Purpose
-This project demonstrates:
-- **Modular C architecture** — 10 focused source files, each < 200 lines
-- **Comprehensive testing** — 100+ unit tests with 100% pass rate
-- **Clean API design** — consistent naming, clear return values
-- **UI abstraction** — swappable interface layer (CLI, GUI-ready)
-- **Configurable board size** — easily extend to 4x4 or larger boards
-- **Defensive programming** — NULL checks, bounds validation, assertions
-- **Refactoring techniques** — before/after examples in the learning guide
+This project is a teaching resource for learning C and software engineering principles through a
+fully-playable, well-structured game. It demonstrates:
+- **Modular C architecture** — focused source files, each with a single responsibility
+- **Comprehensive testing** — unit tests covering board logic, win conditions, and game state
+- **Clean API design** — consistent naming conventions, clear return values, and NULL-safe functions
+- **UI abstraction** — swappable interface layer via function pointer structs (CLI included, GUI-ready)
+- **Configurable board size** — change `BOARD_DIM` in `constants.h` to play on 4×4, 5×5, or larger boards
+- **Defensive programming** — NULL checks, bounds validation, and assertions throughout
+- **AI implementations** — two difficulty levels: random move selection (Easy) and unbeatable Minimax with Alpha-Beta pruning (Hard)
+- **Refactoring techniques** — before/after examples across three progressive skill levels
 
 ## 🛠️ Tech Stack
 | Component          | Technology        | Purpose                       |
@@ -43,7 +48,7 @@ to illustrate specific concepts and common pitfalls.
 - **Level 2**: Separate files, enums, structs (better organization)
 - **Level 3**: This version (tests, minimax AI, full features)
 
-### [Learning Guide](docs/LEARNING_GUIDE.md)
+### [Learning Guide](docs/language_learning_guides/LEARNING_GUIDE.md)
 **Core C Concepts** — Types, enums, structs, arrays, pointers, functions, headers, memory
 
 **Software Engineering Practices:**
@@ -119,21 +124,30 @@ code or improvements.
 
 
 ## How to Play
-1. **Choose difficulty**: Easy (random AI) or Hard (unbeatable minimax AI)
-2. **Choose your symbol**: X or O (X always moves first)
-3. **Enter moves**: Type position 0-8 when prompted
+1. **Choose difficulty**: Enter `e` for Easy (random AI moves) or `h` for Hard (unbeatable Minimax AI)
+2. **Choose your symbol**: Enter `X` or `O` — X always takes the first turn
+3. **Take turns**: On your turn, enter a position number (0–8) to place your symbol
 
-```
+
 Board positions:
-   0 | 1 | 2
-  -----------
-   3 | 4 | 5
-  -----------
-   6 | 7 | 8
+```
+   |   |   
+ 0 | 1 | 2
+___|___|___
+   |   |   
+ 3 | 4 | 5
+___|___|___
+   |   |   
+ 6 | 7 | 8
+   |   |
 ```
 
-4. **Win conditions**: 3 in a row (horizontal, vertical, or diagonal)
-5. **After each game**: Winner chooses symbols for the next game
+
+4. **Computer moves**: The computer plays automatically and announces its chosen position
+5. **Win conditions**: Get 3 of your symbols in a row — horizontally, vertically, or diagonally
+6. **Play again**: After each game you'll be asked if you want to play another round
+   - If there was a winner, that player chooses symbols for the next game
+   - If it was a draw, symbols stay the same
 
 
 ## Architecture

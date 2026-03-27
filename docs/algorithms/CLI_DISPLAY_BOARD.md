@@ -242,7 +242,7 @@ printf("\n");
 
 **Output**: 
 - Rows 0-1: `___|___|___\n`
-- Row 2: `   |   |   \n`
+- Row 2:    `   |   |   \n`
 
 **Why the conditional?** The last row shouldn't have underscores below it—that would look like an incomplete grid. Instead, we print spaces to maintain alignment.
 
@@ -250,25 +250,25 @@ printf("\n");
 
 ## Key Design Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| **String constants** (`BOARD_CELL_PADDING`, etc.) | Centralizes display strings for easy modification and consistency |
-| **3-character cell width** (`" X "`) | Centers the marker with padding for readability |
-| **Conditional separators** (`if col < BOARD_DIM - 1`) | Prevents trailing `\|` at end of each line |
-| **Conditional bottom border** (`if row < BOARD_DIM - 1`) | Clean visual edge—no dangling underscores |
-| **Index formula** (`row * BOARD_DIM + col`) | Standard row-major mapping from 2D to 1D |
-| **Null guard at start** | Defensive programming—prevents crashes |
-| **Using `BOARD_DIM` constant** | Automatically adapts to any board size |
+| Decision                                                 | Rationale                                                         |
+|----------------------------------------------------------|-------------------------------------------------------------------|
+| **String constants** (`BOARD_CELL_PADDING`, etc.)        | Centralizes display strings for easy modification and consistency |
+| **3-character cell width** (`" X "`)                     | Centers the marker with padding for readability                   |
+| **Conditional separators** (`if col < BOARD_DIM - 1`)    | Prevents trailing `\|` at end of each line                        |
+| **Conditional bottom border** (`if row < BOARD_DIM - 1`) | Clean visual edge—no dangling underscores                         |
+| **Index formula** (`row * BOARD_DIM + col`)              | Standard row-major mapping from 2D to 1D                          |
+| **Null guard at start**                                  | Defensive programming—prevents crashes                            |
+| **Using `BOARD_DIM` constant**                           | Automatically adapts to any board size                            |
 
 ---
 
 ## Complexity Analysis
 
-| Metric | Value | Explanation |
-|--------|-------|-------------|
-| **Time Complexity** | O(n²) | Where n = BOARD_DIM. Visits each cell once. |
-| **Space Complexity** | O(1) | Only uses loop counters; no dynamic allocation |
-| **I/O Operations** | O(n²) | One `printf` per cell segment |
+| Metric               | Value | Explanation                                    |
+|----------------------|-------|------------------------------------------------|
+| **Time Complexity**  | O(n²) | Where n = BOARD_DIM. Visits each cell once.    |
+| **Space Complexity** | O(1)  | Only uses loop counters; no dynamic allocation |
+| **I/O Operations**   | O(n²) | One `printf` per cell segment                  |
 
 For a 3x3 board: 9 cells × 3 sub-rows = 27 cell-prints + separators ≈ 50 printf calls.
 
@@ -402,13 +402,13 @@ for (int row = 0; row < BOARD_DIM; row++) {
 **Pros**: Works for any board size, easy to extend  
 **Cons**: More code, multiple printf calls
 
-| Aspect | Template | Dynamic |
-|--------|----------|---------|
-| Lines of code | ~15 | ~25 |
-| Board sizes supported | 3x3 only | Any NxN |
-| Adding features | Rewrite template | Modify loop body |
-| Performance | Single printf | Multiple printfs |
-| Readability | Visual template | Algorithmic |
+| Aspect                | Template         | Dynamic          |
+|-----------------------|------------------|------------------|
+| Lines of code         | ~15              | ~25              |
+| Board sizes supported | 3x3 only         | Any NxN          |
+| Adding features       | Rewrite template | Modify loop body |
+| Performance           | Single printf    | Multiple printfs |
+| Readability           | Visual template  | Algorithmic      |
 
 The dynamic approach is preferred for maintainability and extensibility.
 

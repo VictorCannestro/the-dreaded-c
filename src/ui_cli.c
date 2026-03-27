@@ -42,8 +42,9 @@ static void cli_display_board(const GameState *state) {
     if (state == NULL) {
         return;
     }
-    newline();
-    
+
+    printf("\n");
+
     for (int row = 0; row < BOARD_DIM; row++) {
         /* Top padding row */
         for (int col = 0; col < BOARD_DIM; col++) {
@@ -52,7 +53,7 @@ static void cli_display_board(const GameState *state) {
                 printf("%s", BOARD_CELL_SEPARATOR);
             }
         }
-        newline();
+        printf("\n");
 
         /* Cell values row */
         for (int col = 0; col < BOARD_DIM; col++) {
@@ -62,7 +63,7 @@ static void cli_display_board(const GameState *state) {
                 printf("%s", BOARD_CELL_SEPARATOR);
             }
         }
-        newline();
+        printf("\n");
 
         /* Bottom border row (or spacing for last row) */
         for (int col = 0; col < BOARD_DIM; col++) {
@@ -75,13 +76,14 @@ static void cli_display_board(const GameState *state) {
                 printf("%s", BOARD_CELL_SEPARATOR);
             }
         }
-        newline();
+        printf("\n");
     }
-    newline();
+
+    printf("\n");
 }
 
 static void cli_display_status(GameStatus status) {
-    newline();
+    printf("\n");
     switch (status) {
         case X_WINS:
             printf("%s", MSG_X_WINS);
@@ -96,7 +98,7 @@ static void cli_display_status(GameStatus status) {
             printf("%s", MSG_ONGOING);
             break;
     }
-    newline();
+    printf("\n");
 }
 
 static void cli_display_message(const char *message) {

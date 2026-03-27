@@ -49,21 +49,31 @@ to illustrate specific concepts and common pitfalls.
 - **Level 3**: This version (tests, minimax AI, full features)
 
 ### [Learning Guide](docs/language_learning_guides/LEARNING_GUIDE.md)
-**Core C Concepts** — Types, enums, structs, arrays, pointers, functions, headers, memory
+**11 lessons** progressing from basics to advanced topics:
 
-**Software Engineering Practices:**
+| Lesson | Topic                                         |
+|--------|-----------------------------------------------|
+| 0–2    | Basic types, control flow, arrays             |
+| 3–5    | Named constants, functions, pointers          |
+| 6–8    | Structs, header files, function pointers      |
+| 9      | Memory management (`malloc`/`free`, Valgrind) |
+| 10     | Capstone: SDL Snake game analysis             |
+
+### [Software Engineering Practices](docs/SOFTWARE_ENGINEERING_PRACTICES.md)
 - Separation of concerns
 - API design principles
 - Defensive programming
 - Unit testing strategies
 - Code smells & refactoring
 
-**15 Common C Pitfalls** — With examples and fixes:
-- Missing includes for NULL
-- `()` vs `(void)` in function declarations
-- Array bounds errors
-- Uninitialized pointers
-- And 11 more...
+### [Common C Pitfalls](docs/pitfalls/README.md)
+Six documents covering real bugs and how to avoid them:
+- Memory & pointers (NULL, bounds, off-by-one)
+- Function declarations (`()` vs `(void)`, header guards)
+- Variables & types (uninitialized, integer promotion)
+- Operators & control flow (`=` vs `==`, missing `break`)
+- Strings & input (buffer overflow, ignored return values)
+- Standards & conventions
 
 
 ### [Requirements](docs/REQUIREMENTS.md)
